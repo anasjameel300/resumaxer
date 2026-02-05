@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AtsAnalysis, ResumeData } from "../types";
+import { AtsAnalysis, ResumeData, WizardInitialData, CareerRoadmapResponse } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -25,10 +25,31 @@ const clarificationSchema: Schema = {
     questions: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: "List of 2-3 specific follow-up questions to gather missing critical info (e.g. metrics, links, dates)."
+      description: "List of 3 specific follow-up questions."
     }
   },
   required: ["questions"]
+};
+
+// Wizard Parsing Schema
+const wizardParseSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    personalInfo: {
+      type: Type.OBJECT,
+      properties: {
+        fullName: { type: Type.STRING },
+        email: { type: Type.STRING },
+        phone: { type: Type.STRING },
+        location: { type: Type.STRING },
+        linkedin: { type: Type.STRING },
+      }
+    },
+    experienceRaw: { type: Type.STRING, description: "The work experience section as a single string block." },
+    educationRaw: { type: Type.STRING, description: "The education section as a single string block." },
+    skillsRaw: { type: Type.STRING, description: "Skills and projects sections combined as a single string block." },
+  },
+  required: ["personalInfo", "experienceRaw", "educationRaw", "skillsRaw"]
 };
 
 // Schema for generating a full resume structure
@@ -118,16 +139,73 @@ const resumeDataSchema: Schema = {
   required: ["fullName", "email", "summary", "experience", "education", "skills", "suggestedTemplate", "suggestedThemeColor", "suggestedFont"]
 };
 
+// Roadmap Schema
+const roadmapSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    currentStatus: { type: Type.STRING, description: "Brief assessment of where the user is now." },
+    gapAnalysis: { type: Type.STRING, description: "What is missing between current skills and target role." },
+    phases: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING, description: "e.g., Phase 1: Foundations" },
+          duration: { type: Type.STRING, description: "e.g., Weeks 1-4" },
+          goal: { type: Type.STRING, description: "Main objective of this phase." },
+          steps: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                task: { type: Type.STRING, description: "Actionable item, e.g., 'Learn React Hooks'" },
+                description: { type: Type.STRING, description: "Why this is important." }
+              },
+              required: ["id", "task", "description"]
+            }
+          },
+          resources: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                type: { type: Type.STRING, enum: ["Course", "Article", "Book", "Tool", "Project"] },
+                url: { type: Type.STRING, description: "A valid URL or search query." }
+              },
+              required: ["title", "type"]
+            }
+          }
+        },
+        required: ["title", "duration", "goal", "steps", "resources"]
+      }
+    }
+  },
+  required: ["currentStatus", "gapAnalysis", "phases"]
+};
+
 export const analyzeAtsScore = async (resumeText: string, jobDescription?: string): Promise<AtsAnalysis> => {
   const model = "gemini-3-flash-preview";
   
-  let prompt = `Analyze this resume based on 5 categories: Content Quality, ATS & Structure, Job Optimization, Writing Quality, and Application Ready.
-  Provide a score out of 100 for each, and an overall score.`;
+  let prompt = `You are a strict, objective ATS (Applicant Tracking System) Scanner. 
+  Your job is to score resumes consistently based on a fixed rubric.
+  
+  SCORING RUBRIC (Follow Strict Scoring):
+  - Base Score for all categories starts at 50.
+  - Content Quality: +10 for quantified metrics (numbers, %), +10 for clear results, -10 for vague duties.
+  - ATS Structure: +10 for standard headings, -20 for tables/columns/graphics that break parsing.
+  - Job Optimization: +20 if keywords match the JD (or industry standards if no JD), -20 if generic.
+  - Writing Quality: +10 for active voice, -10 for passive voice or typos.
+  
+  Analyze this resume based on 5 categories: Content Quality, ATS & Structure, Job Optimization, Writing Quality, and Application Ready.
+  Provide a score out of 100 for each, and an overall score (average).
+  `;
 
   if (jobDescription) {
-    prompt += `\n\nThe user is applying for this specific job. optimizing for keywords is critical:\n${jobDescription}`;
+    prompt += `\n\nThe user is applying for this specific job. Optimizing for keywords is critical:\n${jobDescription}`;
   } else {
-    prompt += `\n\nNo specific job description provided. Evaluate against general industry standards.`;
+    prompt += `\n\nNo specific job description provided. Evaluate against general industry standards for the detected role.`;
   }
 
   prompt += `\n\nResume Text:\n${resumeText}`;
@@ -139,6 +217,7 @@ export const analyzeAtsScore = async (resumeText: string, jobDescription?: strin
       config: {
         responseMimeType: "application/json",
         responseSchema: analysisSchema,
+        temperature: 0, // Deterministic output
       }
     });
 
@@ -149,6 +228,38 @@ export const analyzeAtsScore = async (resumeText: string, jobDescription?: strin
     console.error("Analysis failed:", error);
     throw error;
   }
+};
+
+export const parseRawResumeData = async (resumeText: string): Promise<WizardInitialData> => {
+  const model = "gemini-3-flash-preview";
+  
+  const prompt = `Parse the following resume text into structured raw data blocks.
+  The goal is to pre-fill a resume builder wizard.
+  
+  Resume Text:
+  ${resumeText}
+  
+  Requirements:
+  1. Extract 'personalInfo' (Name, email, phone, location, linkedin).
+  2. Extract 'experienceRaw' as a single block of text containing all work history details. Keep the original formatting if possible.
+  3. Extract 'educationRaw' as a single block of text containing all education details.
+  4. Extract 'skillsRaw' as a single block of text containing skills, projects, and certifications.
+  
+  Return JSON only.
+  `;
+
+  const response = await ai.models.generateContent({
+    model,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: wizardParseSchema,
+    }
+  });
+
+  const text = response.text;
+  if (!text) throw new Error("Failed to parse resume.");
+  return JSON.parse(text) as WizardInitialData;
 };
 
 export const tailorResume = async (currentResumeData: ResumeData, jobDescription: string): Promise<string> => {
@@ -191,19 +302,23 @@ export const generateClarificationQuestions = async (inputs: any): Promise<strin
   const model = "gemini-3-flash-preview";
   
   const prompt = `You are a Resume Consultant. Review the raw data provided by a user to build their resume.
-  Identify missing critical information that would strengthen the resume, such as:
-  - Missing project links (GitHub, Portfolio) for developers/designers.
-  - Missing quantifiable metrics (revenue, percentages) in experience.
-  - Missing dates or locations.
   
+  PREVIOUS ANALYSIS RECOMMENDATIONS (CRITICAL):
+  ${JSON.stringify(inputs.analysisImprovements || [])}
+
   User Inputs:
   Personal: ${JSON.stringify(inputs.personalInfo)}
   Experience: ${inputs.experienceRaw}
   Projects/Skills: ${inputs.skillsRaw}
   Target Role/JD: ${inputs.strategy === 'Tailored' ? inputs.jobDescription : inputs.predefinedRole}
 
-  Generate exactly 3 short, specific follow-up questions to ask the user. 
-  If the input is comprehensive, ask about "Soft Skills" or "Hobbies" to round it out.
+  CRITICAL INSTRUCTIONS:
+  1. **QUESTION 1 MUST BE MANDATORY AND CRITICAL**: Identify the absolute biggest missing piece of information (e.g., missing metrics, missing role dates, or the most important missing keyword from the JD). The first question MUST address this directly.
+  2. **Address Analysis Gaps**: Look at the "Previous Analysis Recommendations". If the analysis said "Quantify results", you MUST ask a question like "The analysis suggested quantifying results. Can you provide specific numbers/metrics for your role at [Company]?"
+  3. Ambiguity Check: If the user says vague things like "Worked on many projects" or "20+ websites", ask them to "List the top 2-3 most relevant projects with specific technologies used."
+  
+  Generate exactly 3 short, specific follow-up questions.
+  The FIRST question should be the most important one.
   `;
 
   const response = await ai.models.generateContent({
@@ -216,7 +331,7 @@ export const generateClarificationQuestions = async (inputs: any): Promise<strin
   });
 
   const text = response.text;
-  if (!text) return ["Could you provide more details about your latest project?", "Do you have any specific metrics for your achievements?", "Do you have a portfolio link?"];
+  if (!text) return ["What is your most recent role and key achievement?", "Do you have any specific metrics for your achievements?", "Do you have a portfolio link?"];
   const parsed = JSON.parse(text);
   return parsed.questions || [];
 };
@@ -227,6 +342,9 @@ export const generateFullResume = async (inputs: any, clarificationAnswers?: any
   const prompt = `You are a professional Resume Writer and Career Coach. 
   Create a complete, structured resume based on the raw information provided by the user below.
   
+  PREVIOUS ANALYSIS RECOMMENDATIONS (MUST IMPLEMENT):
+  ${JSON.stringify(inputs.analysisImprovements || [])}
+
   User Inputs:
   - Strategy: ${inputs.strategy}
   - Role Context: ${inputs.strategy === 'Tailored' ? inputs.jobDescription : inputs.predefinedRole}
@@ -236,13 +354,20 @@ export const generateFullResume = async (inputs: any, clarificationAnswers?: any
   - Raw Skills & Projects: ${inputs.skillsRaw}
   - Follow-up Answers: ${JSON.stringify(clarificationAnswers || {})}
 
-  Instructions:
+  STRICT WRITING RULES:
+  1. **Apply Recommendations**: You MUST actively implement the "Previous Analysis Recommendations" in the generated content.
+  2. **Conciseness is King**: Use clean, concise bullet points for Experience and Projects. 
+  3. **No Paragraphs**: Do not use long paragraphs in the experience section. Convert them to scannable bullets.
+  4. **Ambiguity Resolution**: Use the details provided in the Follow-up Answers to create specific project entries.
+  5. **Action Verbs**: Start every bullet with a strong action verb (e.g., Engineered, Spearheaded, Optimized).
+  6. **Recruiter Friendly**: Ensure the layout and content are optimized for a 6-second recruiter scan.
+
+  Tasks:
   1. Parse the raw text into structured JSON.
-  2. Write a professional summary based on the strategy/role.
-  3. Experience: Format as "Role", "Company", "Duration", and bullet points. Polish bullets to be achievement-oriented (Action Verb + Task + Result).
-  4. Projects: EXTRACT LINKS if present in raw text or follow-up answers. If a project description is vague, use the context from the role to enhance it professionally (without lying).
-  5. Template Selection: Suggest a 'suggestedTemplate' (modern, classic, creative, minimalist, standard, executive, compact, elegant, timeline), 'suggestedThemeColor', and 'suggestedFont' based on the user's role and industry. 
-     - e.g. 'creative' for designers, 'executive' for managers, 'modern' for devs.
+  2. Write a professional summary.
+  3. Format Experience with "Role", "Company", "Duration", and bullet points.
+  4. Format Projects (extracting links if available).
+  5. Suggest a 'suggestedTemplate', 'suggestedThemeColor', and 'suggestedFont'.
   6. Return a JSON object matching the schema.
   `;
 
@@ -264,11 +389,46 @@ export const optimizeResumeContent = async (currentResume: string, jobDescriptio
     return "Use tailorResume instead";
 };
 
-export const roastMyResume = async (resumeText: string): Promise<string> => {
+export const roastMyResume = async (resumeText: string, persona: string = 'hr'): Promise<string> => {
   const model = "gemini-3-flash-preview";
   
-  const prompt = `Roast this resume. You are a cynical, ruthless, hard-to-please senior recruiter who has seen thousands of terrible resumes. 
-  Be funny, mean, but also truthful about the flaws. Make fun of clichés, vague buzzwords, and poor formatting. 
+  let systemInstruction = "";
+  
+  switch (persona) {
+      case 'hr':
+          systemInstruction = `You are a 60-year-old, grumpy, traditional HR Manager. 
+          You hate creative resumes, gaps in employment, and typos. You are blunt and obsessed with "Professionalism".
+          Roast the resume for formatting errors, lack of dates, and vague descriptions.`;
+          break;
+      case 'ceo':
+          systemInstruction = `You are a 25-year-old "Savage" Startup CEO. 
+          You speak in short, punchy sentences. You hate corporate buzzwords like "synergy" or "motivated". 
+          You only care about ROI, metrics, and speed. Roast the resume for being too wordy or boring.`;
+          break;
+      case 'friend':
+          systemInstruction = `You are a former college friend who is now extremely successful and rich. 
+          You are reviewing your old friend's resume. You are supportive but in a very condescending, sarcastic way. 
+          Bring up shared past failures if relevant (e.g., "Is this like that time you failed Econ 101?").`;
+          break;
+      case 'mirror':
+          systemInstruction = `You are "The Mirror". Your job is to analyze the QUALITY of the user's resume and ADOPT A PERSONA THAT REFLECTS IT.
+          
+          RULES FOR REFLECTION:
+          1. If the resume has typos/grammar errors -> Your roast must contain typos and bad grammar.
+          2. If the resume is vague/generic -> Your roast must be confusingly vague and generic.
+          3. If the resume lacks confidence (passive voice) -> Your roast must sound insecure and weak.
+          4. If the resume is actually good -> You can be normal, but point out it's "suspiciously good".
+          
+          Explicitly tell them WHY you are talking this way. e.g., "I'm writing this with no capital letters because you didn't capitalize your job titles."`;
+          break;
+      default:
+          systemInstruction = "You are a ruthless recruiter roasting a resume.";
+  }
+
+  const prompt = `Roast this resume based on your persona.
+  
+  CRITICAL FORMATTING INSTRUCTION: 
+  Start every new section or thought with a Markdown Bold Header (e.g., **First Impression:**, **The Experience:**, **Formatting:**). This is mandatory.
   
   Resume:
   ${resumeText}`;
@@ -277,8 +437,8 @@ export const roastMyResume = async (resumeText: string): Promise<string> => {
     model,
     contents: prompt,
     config: {
-      systemInstruction: "You are a ruthless recruiter roasting a resume.",
-      temperature: 1.2, 
+      systemInstruction: systemInstruction,
+      temperature: 1.3, // High creativity
     }
   });
 
@@ -302,7 +462,7 @@ export const generateResumeSummary = async (data: Partial<ResumeData>, targetRol
   return response.text || "";
 };
 
-export const generateCareerRoadmap = async (data: ResumeData, targetRole: string): Promise<string> => {
+export const generateCareerRoadmap = async (data: ResumeData, targetRole: string): Promise<CareerRoadmapResponse | null> => {
   const model = "gemini-3-pro-preview";
 
   const prompt = `You are an expert Career Coach and Technical Mentor.
@@ -315,25 +475,26 @@ export const generateCareerRoadmap = async (data: ResumeData, targetRole: string
 
   Task:
   Create a comprehensive, step-by-step career roadmap for this user to achieve the Target Role.
-  Scour your knowledge base for the best industry practices, modern tech stacks, and learning resources.
-
-  Structure the response in Markdown:
-  1. **Gap Analysis**: Briefly explain what they have vs. what they need.
-  2. **Phase 1: Foundations (Month 1-2)**: Key concepts to learn.
-  3. **Phase 2: Advanced Skills (Month 3-4)**: Frameworks, tools, or deep dives.
-  4. **Phase 3: Portfolio & Experience**: Specific project ideas to build to prove these skills.
-  5. **Recommended Resources**: List specific names of top-rated courses (Coursera, Udemy), books, or documentation.
-  6. **Certifications**: Recommended certifications if applicable.
-
-  Be specific. Don't just say "Learn JS", say "Master ES6+ concepts like Promises and Async/Await".
+  Return structured JSON data only.
+  
+  Requirements:
+  1. Break the roadmap into 3-4 clear phases (e.g., Foundations, Advanced, Mastery).
+  2. For each phase, provide 3-5 specific "Task" items that are actionable (e.g., "Build a REST API").
+  3. For each phase, provide 2-3 "Resources" which are real links or search queries for courses/docs.
   `;
 
   const response = await ai.models.generateContent({
     model,
     contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: roadmapSchema,
+    }
   });
 
-  return response.text || "Unable to generate roadmap at this time.";
+  const text = response.text;
+  if (!text) return null;
+  return JSON.parse(text) as CareerRoadmapResponse;
 };
 
 export const generateCoverLetter = async (data: ResumeData, jobDescription: string): Promise<string> => {

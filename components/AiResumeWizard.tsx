@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { ResumeData } from '../types';
+import React, { useState, useEffect } from 'react';
+import { ResumeData, WizardInitialData } from '../types';
 import { generateFullResume, generateClarificationQuestions } from '../services/geminiService';
 
 interface AiResumeWizardProps {
   onComplete: (data: ResumeData, meta: { template: string, theme: string, font: string }) => void;
   onCancel: () => void;
+  initialData?: WizardInitialData | null;
 }
 
 type WizardStep = 'STRATEGY' | 'PERSONAL' | 'EXPERIENCE' | 'EDUCATION' | 'SKILLS' | 'CLARIFICATION' | 'GENERATING';
@@ -22,10 +23,11 @@ const PREDEFINED_ROLES = [
     "Customer Support"
 ];
 
-const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel }) => {
+const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel, initialData }) => {
   const [step, setStep] = useState<WizardStep>('STRATEGY');
   const [loading, setLoading] = useState(false);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Form State
   const [strategy, setStrategy] = useState<'Default' | 'Tailored'>('Default');
@@ -43,6 +45,26 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
   const [experienceRaw, setExperienceRaw] = useState('');
   const [educationRaw, setEducationRaw] = useState('');
   const [skillsRaw, setSkillsRaw] = useState('');
+  const [analysisImprovements, setAnalysisImprovements] = useState<string[]>([]);
+  
+  // Pre-fill data if available
+  useEffect(() => {
+      if (initialData) {
+          setPersonalInfo({
+              fullName: initialData.personalInfo.fullName || '',
+              email: initialData.personalInfo.email || '',
+              phone: initialData.personalInfo.phone || '',
+              location: initialData.personalInfo.location || '',
+              linkedin: initialData.personalInfo.linkedin || ''
+          });
+          setExperienceRaw(initialData.experienceRaw || '');
+          setEducationRaw(initialData.educationRaw || '');
+          setSkillsRaw(initialData.skillsRaw || '');
+          if (initialData.analysisImprovements) {
+              setAnalysisImprovements(initialData.analysisImprovements);
+          }
+      }
+  }, [initialData]);
   
   // Clarification State
   const [clarificationQuestions, setClarificationQuestions] = useState<string[]>([]);
@@ -70,6 +92,7 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
 
   const handleGenerateQuestions = async () => {
       setLoadingQuestions(true);
+      setError(null);
       try {
           const inputs = {
             strategy,
@@ -77,7 +100,8 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
             predefinedRole,
             personalInfo,
             experienceRaw,
-            skillsRaw
+            skillsRaw,
+            analysisImprovements
           };
           const questions = await generateClarificationQuestions(inputs);
           setClarificationQuestions(questions);
@@ -95,6 +119,13 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
   const handleSubmit = async () => {
     setStep('GENERATING');
     setLoading(true);
+    setError(null);
+
+    // Timeout promise (50 seconds) to prevent infinite hanging
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout")), 50000)
+    );
+
     try {
       const inputs = {
         strategy,
@@ -103,7 +134,8 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
         personalInfo,
         experienceRaw,
         educationRaw,
-        skillsRaw
+        skillsRaw,
+        analysisImprovements
       };
       
       const answersObject = clarificationQuestions.reduce((acc, q, i) => {
@@ -111,7 +143,11 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
           return acc;
       }, {} as any);
 
-      const result = await generateFullResume(inputs, answersObject);
+      // Race the generation against the timeout
+      const result: any = await Promise.race([
+          generateFullResume(inputs, answersObject),
+          timeoutPromise
+      ]);
       
       // Extract meta fields and clean data
       const { suggestedTemplate, suggestedThemeColor, suggestedFont, ...cleanData } = result;
@@ -121,10 +157,15 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
           theme: suggestedThemeColor,
           font: suggestedFont
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Something went wrong generating the resume. Please try again.");
       setLoading(false);
+      // If it's a timeout or API error, allow retry
+      if (error.message === "Timeout") {
+          setError("The AI is taking longer than expected. Please try again.");
+      } else {
+          setError("Something went wrong generating the resume. Please try again.");
+      }
       setStep('CLARIFICATION');
     }
   };
@@ -151,6 +192,11 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
          <p className="text-surface-500 max-w-md">
             Our AI is structuring your experience, selecting the best design, and polishing your content.
          </p>
+         {analysisImprovements.length > 0 && (
+             <p className="text-xs text-green-600 mt-2 font-medium bg-green-50 px-3 py-1 rounded-full animate-pulse">
+                 Applying improvements from your analysis...
+             </p>
+         )}
       </div>
     );
   }
@@ -178,10 +224,25 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel })
 
        <div className="p-8 min-h-[400px]">
            
+           {/* Error Banner */}
+           {error && (
+               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3 animate-fade-in">
+                   <span className="text-xl">⚠️</span>
+                   <p className="text-sm font-bold">{error}</p>
+               </div>
+           )}
+           
            {/* STEP 1: STRATEGY */}
            {step === 'STRATEGY' && (
                <div className="space-y-6 animate-fade-in">
-                   <h3 className="text-2xl font-bold text-surface-900">Choose your resume strategy.</h3>
+                   <div className="flex justify-between items-baseline">
+                        <h3 className="text-2xl font-bold text-surface-900">Choose your resume strategy.</h3>
+                        {initialData && (
+                            <span className="text-xs font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full animate-pulse">
+                                Data Pre-filled from Analysis
+                            </span>
+                        )}
+                   </div>
                    
                    <div className="space-y-4">
                        <label className="flex items-start gap-4 p-4 border rounded-xl cursor-pointer hover:bg-surface-50 transition-colors">
@@ -339,12 +400,15 @@ Project: E-commerce Dashboard
 
                    <div className="space-y-6">
                        {clarificationQuestions.map((q, idx) => (
-                           <div key={idx} className="bg-surface-50 p-4 rounded-xl border border-surface-200">
-                               <label className="font-bold text-surface-800 block mb-2">{q}</label>
+                           <div key={idx} className={`bg-surface-50 p-4 rounded-xl border ${idx === 0 ? 'border-primary-200 ring-1 ring-primary-100' : 'border-surface-200'}`}>
+                               <label className="font-bold text-surface-800 block mb-2 flex items-center gap-2">
+                                   {q} 
+                                   {idx === 0 && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">REQUIRED</span>}
+                               </label>
                                <input 
                                     type="text" 
                                     className="input-field" 
-                                    placeholder="Type your answer here..."
+                                    placeholder={idx === 0 ? "This answer is mandatory..." : "Type your answer here..."}
                                     value={clarificationAnswers[idx]}
                                     onChange={(e) => {
                                         const newAnswers = [...clarificationAnswers];
@@ -362,7 +426,7 @@ Project: E-commerce Dashboard
 
        {/* Footer Actions */}
        <div className="p-6 bg-surface-50 border-t border-surface-200 flex justify-between items-center">
-           {step !== 'STRATEGY' && step !== 'GENERATING' ? (
+           {step !== 'STRATEGY' ? (
                <button onClick={handleBack} className="px-6 py-2 rounded-lg font-bold text-surface-500 hover:bg-surface-200 transition-colors">
                    Back
                </button>
@@ -370,15 +434,17 @@ Project: E-commerce Dashboard
                 <div /> // Spacer
            )}
            
-           {step !== 'GENERATING' && (
-                <button 
-                    onClick={handleNext} 
-                    disabled={(step === 'STRATEGY' && strategy === 'Tailored' && !jobDescription) || (step === 'STRATEGY' && strategy === 'Default' && !predefinedRole)}
-                    className="px-8 py-3 rounded-lg font-bold text-white bg-primary-600 hover:bg-primary-700 shadow-lg hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {step === 'CLARIFICATION' ? '✨ Generate Final Resume' : 'Next →'}
-                </button>
-           )}
+           <button 
+                onClick={handleNext} 
+                disabled={
+                    (step === 'STRATEGY' && strategy === 'Tailored' && !jobDescription) || 
+                    (step === 'STRATEGY' && strategy === 'Default' && !predefinedRole) ||
+                    (step === 'CLARIFICATION' && !clarificationAnswers[0]?.trim()) // Q1 Mandatory Check
+                }
+                className="px-8 py-3 rounded-lg font-bold text-white bg-primary-600 hover:bg-primary-700 shadow-lg hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {step === 'CLARIFICATION' ? '✨ Generate Final Resume' : 'Next →'}
+            </button>
        </div>
     </div>
   );

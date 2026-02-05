@@ -1,5 +1,6 @@
 
 export enum AppView {
+  LANDING = 'LANDING',
   DASHBOARD = 'DASHBOARD',
   BUILDER = 'BUILDER',
   ATS_SCORER = 'ATS_SCORER',
@@ -28,6 +29,20 @@ export interface ResumeData {
   languages: LanguageItem[];
   themeColor?: string;
   font?: string;
+}
+
+export interface WizardInitialData {
+  personalInfo: {
+    fullName: string;
+    email: string;
+    phone: string;
+    location: string;
+    linkedin: string;
+  };
+  experienceRaw: string;
+  educationRaw: string;
+  skillsRaw: string;
+  analysisImprovements?: string[];
 }
 
 export interface ExperienceItem {
@@ -80,4 +95,31 @@ export interface OptimizationResult {
   originalText: string;
   optimizedText: string;
   explanation: string;
+}
+
+// --- Roadmap Types ---
+export interface RoadmapResource {
+  title: string;
+  type: string; // Course, Article, Book, Tool
+  url?: string;
+}
+
+export interface RoadmapStep {
+  id: string;
+  task: string;
+  description: string;
+}
+
+export interface RoadmapPhase {
+  title: string;
+  duration: string;
+  goal: string;
+  steps: RoadmapStep[];
+  resources: RoadmapResource[];
+}
+
+export interface CareerRoadmapResponse {
+  currentStatus: string;
+  gapAnalysis: string;
+  phases: RoadmapPhase[];
 }

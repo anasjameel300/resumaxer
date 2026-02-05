@@ -20,28 +20,24 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-12">
       {/* Redesigned Header */}
       <div className="relative bg-white rounded-3xl shadow-sm border border-surface-200 overflow-hidden">
-        {/* Decorational Background Pattern */}
-        <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-r from-primary-600 via-indigo-600 to-primary-800">
-           <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px'}}></div>
-        </div>
         
-        <div className="relative px-8 md:px-12 pt-24 pb-8">
-           <div className="flex flex-col md:flex-row items-end gap-8">
+        <div className="relative px-8 md:px-12 pt-8 pb-8">
+           <div className="flex flex-col md:flex-row items-center gap-8">
               {/* Avatar */}
               <div className="relative">
-                 <div className="w-40 h-40 rounded-full bg-white p-2 shadow-xl ring-4 ring-white/50">
-                    <div className="w-full h-full bg-surface-100 rounded-full flex items-center justify-center text-6xl text-primary-300 font-bold overflow-hidden">
+                 <div className="w-32 h-32 rounded-full bg-white p-1 shadow-lg border border-surface-200">
+                    <div className="w-full h-full bg-surface-50 rounded-full flex items-center justify-center text-5xl text-primary-300 font-bold overflow-hidden">
                        {data.fullName ? data.fullName.charAt(0).toUpperCase() : (
-                         <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                         <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                        )}
                     </div>
                  </div>
                  {/* Status Indicator */}
-                 <div className="absolute bottom-3 right-3 w-6 h-6 bg-green-500 border-4 border-white rounded-full" title="Active"></div>
+                 <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white rounded-full" title="Active"></div>
               </div>
 
               {/* Main Info */}
-              <div className="flex-1 pb-2 text-center md:text-left">
+              <div className="flex-1 text-center md:text-left">
                  <h1 className="text-4xl font-extrabold text-surface-900 tracking-tight mb-2">
                     {data.fullName || "Guest User"}
                  </h1>
@@ -59,7 +55,7 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
               </div>
 
               {/* Stats/Action */}
-              <div className="flex items-center gap-4 mb-2">
+              <div className="flex items-center gap-4">
                  <div className="bg-surface-50 px-5 py-3 rounded-2xl border border-surface-100 text-center min-w-[100px]">
                     <div className="text-2xl font-bold text-surface-900">{data.experience.length}</div>
                     <div className="text-xs font-bold text-surface-400 uppercase">Roles</div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ResumeData, ExperienceItem, ProjectItem, EducationItem, TemplateId, LanguageItem, SocialLink } from '../types';
+import { ResumeData, ExperienceItem, ProjectItem, EducationItem, TemplateId, LanguageItem, SocialLink, WizardInitialData } from '../types';
 import { generateResumeSummary } from '../services/geminiService';
 import ResumePreview from './ResumeTemplates';
 import AiResumeWizard from './AiResumeWizard';
@@ -11,6 +11,8 @@ interface ResumeBuilderProps {
   redo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  initialWizardData?: WizardInitialData | null;
+  onCheckScore?: (data: ResumeData) => void;
 }
 
 const STEPS = [
@@ -112,8 +114,9 @@ const RICH_PREVIEW_DATA: Partial<ResumeData> = {
     ]
 };
 
-const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo, canUndo, canRedo }) => {
-  const [builderMode, setBuilderMode] = useState<'SELECT' | 'MANUAL' | 'AI'>('SELECT');
+const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo, canUndo, canRedo, initialWizardData, onCheckScore }) => {
+  // If we have initial data (from Improve flow), default to AI mode immediately
+  const [builderMode, setBuilderMode] = useState<'SELECT' | 'MANUAL' | 'AI'>(initialWizardData ? 'AI' : 'SELECT');
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
   const [targetRole, setTargetRole] = useState('');
@@ -275,6 +278,18 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
       return true;
   });
 
+  const suggestTemplate = (data: ResumeData): TemplateId => {
+    const role = data.experience[0]?.role?.toLowerCase() || "";
+    const summary = data.summary?.toLowerCase() || "";
+    
+    if (role.includes('executive') || role.includes('manager') || role.includes('director') || role.includes('vp')) return 'executive';
+    if (role.includes('designer') || role.includes('creative') || role.includes('artist') || summary.includes('creative')) return 'creative';
+    if (role.includes('software') || role.includes('developer') || role.includes('engineer')) return 'modern';
+    if (data.experience.length > 4) return 'compact';
+    
+    return 'modern';
+  };
+
   // --- MODE SELECTION SCREEN ---
   if (builderMode === 'SELECT') {
       return (
@@ -324,6 +339,7 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
   if (builderMode === 'AI') {
       return (
           <AiResumeWizard 
+            initialData={initialWizardData}
             onCancel={() => setBuilderMode('SELECT')}
             onComplete={(generatedData, meta) => {
                 // Merge generated data and apply suggested meta styling
@@ -395,7 +411,7 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
                                         <button
                                             key={c.hex}
                                             onClick={() => updateField('themeColor', c.hex)}
-                                            className={`w-8 h-8 rounded-full border-2 transition-all ${data.themeColor === c.hex ? 'border-surface-900 scale-110' : 'border-transparent hover:scale-110'}`}
+                                            className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${data.themeColor === c.hex ? 'border-surface-900 scale-110 ring-2 ring-offset-2 ring-surface-300' : 'border-white hover:scale-110'}`}
                                             style={{ backgroundColor: c.hex }}
                                             title={c.name}
                                         />
@@ -503,6 +519,7 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
 
         {/* Scrollable Form Area */}
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            {/* ... (Existing Steps 1-8 content remains unchanged) ... */}
             
             {currentStep === 1 && (
                 <div className="space-y-6 animate-fade-in">
@@ -742,36 +759,118 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
             )}
 
             {currentStep === 9 && (
-                <div className="space-y-8 animate-fade-in flex flex-col items-center justify-center h-full text-center">
-                    <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-4xl mb-4 animate-bounce">🎉</div>
-                    <h2 className="text-3xl font-extrabold text-surface-900">You're All Set!</h2>
-                    <p className="text-surface-600 max-w-md">Your resume is ready to go. Download it now.</p>
-                    
-                    <div className="flex flex-col gap-4 w-full max-w-xs">
-                        <button onClick={() => window.print()} className="w-full py-4 bg-surface-900 text-white rounded-xl font-bold shadow-xl hover:bg-black hover:scale-105 transition-all flex items-center justify-center gap-3">
-                            Standard PDF
-                        </button>
-                         <button onClick={handleLatexExport} disabled={generatingPdf} className="w-full py-4 bg-primary-600 text-white rounded-xl font-bold shadow-xl hover:bg-primary-700 hover:scale-105 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                            {generatingPdf ? 'Compiling...' : 'LaTeX PDF'}
-                        </button>
-                        <button onClick={() => setCurrentStep(1)} className="text-surface-500 font-medium hover:text-surface-900">Keep Editing</button>
+                <div className="h-full flex flex-col">
+                    {/* Header */}
+                    <div className="px-8 py-6 border-b border-surface-100 bg-white">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-2xl font-bold text-surface-900">Finalize & Export</h2>
+                            <div className="flex gap-2">
+                                <button onClick={() => window.print()} className="px-4 py-2 bg-surface-100 text-surface-700 rounded-lg font-bold hover:bg-surface-200 transition-colors flex items-center gap-2 border border-surface-200 shadow-sm">
+                                    <span>🖨️</span> Print / PDF
+                                </button>
+                                <button onClick={handleLatexExport} disabled={generatingPdf} className="px-4 py-2 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 transition-colors flex items-center gap-2 shadow-md disabled:opacity-50">
+                                    {generatingPdf ? <span className="animate-spin">⌛</span> : <span>📄</span>}
+                                    LaTeX Export
+                                </button>
+                            </div>
+                        </div>
+                        <p className="text-surface-500 text-sm">Customize the final look before downloading.</p>
+                    </div>
+
+                    {/* Scrollable Settings */}
+                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+                        
+                        {/* Score Check Button */}
+                        <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-xl flex items-center justify-between">
+                            <div>
+                                <h3 className="font-bold text-indigo-900">How strong is this resume?</h3>
+                                <p className="text-sm text-indigo-700">Check your new ATS score before exporting.</p>
+                            </div>
+                            <button 
+                                onClick={() => onCheckScore && onCheckScore(data)}
+                                className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                            >
+                                View Resume Score
+                            </button>
+                        </div>
+
+                        {/* 1. Appearance Controls */}
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-xs font-bold text-surface-400 uppercase mb-3 block">Color Theme</label>
+                                <div className="flex flex-wrap gap-3">
+                                    {COLORS.map((c) => (
+                                        <button
+                                            key={c.hex}
+                                            onClick={() => updateField('themeColor', c.hex)}
+                                            className={`w-10 h-10 rounded-full border-2 transition-all shadow-sm ${data.themeColor === c.hex ? 'border-surface-900 scale-110 ring-2 ring-offset-2 ring-surface-300' : 'border-white hover:scale-110'}`}
+                                            style={{ backgroundColor: c.hex }}
+                                            title={c.name}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-surface-400 uppercase mb-3 block">Typography</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {FONTS.map(f => (
+                                        <button 
+                                            key={f.id}
+                                            onClick={() => updateField('font', f.id)}
+                                            className={`px-4 py-3 rounded-xl border transition-all text-sm ${data.font === f.id ? 'bg-surface-900 text-white border-surface-900 shadow-md' : 'bg-white text-surface-600 border-surface-200 hover:border-surface-300 hover:bg-surface-50'}`}
+                                        >
+                                            <span style={{ fontFamily: f.family }}>{f.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. Template Selection */}
+                        <div>
+                            <label className="text-xs font-bold text-surface-400 uppercase mb-4 block">Switch Template</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                {TEMPLATES_META.map((t) => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => setSelectedTemplate(t.id as TemplateId)}
+                                        className={`text-left p-4 rounded-xl border-2 transition-all ${selectedTemplate === t.id ? 'border-primary-600 bg-primary-50 ring-1 ring-primary-200' : 'border-surface-100 hover:border-surface-300 bg-white hover:shadow-md'}`}
+                                    >
+                                        <div className="font-bold text-surface-900 text-sm mb-1">{t.name}</div>
+                                        <div className="text-xs text-surface-500 line-clamp-2">{t.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Footer Navigation */}
+                    <div className="p-6 border-t border-surface-200 bg-surface-50 flex justify-between items-center">
+                        <button onClick={() => setCurrentStep(8)} className="text-surface-500 font-bold hover:text-surface-900">← Back to Summary</button>
+                        <div className="text-xs text-surface-400">
+                            Pro Tip: Use 'Save as PDF' in the print dialog.
+                        </div>
                     </div>
                 </div>
             )}
         </div>
 
         {/* Footer Actions (MANUAL MODE) */}
-        <div className="p-6 border-t border-surface-200 bg-white flex justify-between items-center">
-            <button onClick={handleBack} disabled={currentStep === 0} className="px-6 py-3 rounded-lg font-bold text-surface-500 hover:bg-surface-100 disabled:opacity-0 transition-all">Back</button>
-            <button onClick={handleNext} disabled={currentStep === 9} className={`px-8 py-3 rounded-lg font-bold text-white shadow-lg transition-all transform hover:-translate-y-1 ${currentStep === 9 ? 'bg-surface-300 opacity-0 pointer-events-none' : 'bg-primary-600 hover:bg-primary-700'}`}>Continue</button>
-        </div>
+        {currentStep !== 9 && (
+            <div className="p-6 border-t border-surface-200 bg-white flex justify-between items-center">
+                <button onClick={handleBack} disabled={currentStep === 0} className="px-6 py-3 rounded-lg font-bold text-surface-500 hover:bg-surface-100 disabled:opacity-0 transition-all">Back</button>
+                <button onClick={handleNext} className="px-8 py-3 rounded-lg font-bold text-white shadow-lg transition-all transform hover:-translate-y-1 bg-primary-600 hover:bg-primary-700">Continue</button>
+            </div>
+        )}
       </div>
 
       {/* Right Panel: Live Preview */}
       <div className="hidden lg:block w-[45%] bg-surface-100 relative shadow-inner overflow-hidden">
          <div className="absolute inset-0 overflow-y-auto flex justify-center py-10 custom-scrollbar">
              {/* Ensure container handles large content properly */}
-             <div id="resume-preview-container" className="bg-white shadow-2xl w-[210mm] min-h-[297mm] h-fit p-[10mm] origin-top transform transition-all duration-300 scale-[0.7] xl:scale-[0.85] overflow-visible">
+             <div id="resume-preview-container" className="bg-white shadow-2xl w-[210mm] min-h-[297mm] h-fit p-[10mm] origin-top transform transition-all duration-300 scale-[0.7] xl:scale-[0.85] overflow-visible mb-20">
                  <ResumePreview data={data} template={selectedTemplate} />
              </div>
          </div>
@@ -783,6 +882,7 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
 
 // --- LaTeX Generation Logic ---
 const generateLatexSource = (data: ResumeData, templateId: string): string => {
+    // ... (same as before)
     const esc = (s: string = "") => s.replace(/([&%$#_{}~^])/g, "\\$1");
     const isSerif = data.font === 'serif' || ['classic', 'elegant'].includes(templateId);
     const isMono = data.font === 'mono';
@@ -793,25 +893,28 @@ const generateLatexSource = (data: ResumeData, templateId: string): string => {
     
     const colorHex = data.themeColor?.replace('#', '') || '000000';
 
-    return `
-\\documentclass[a4paper,10pt]{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage[margin=0.75in]{geometry}
-\\usepackage{xcolor}
-\\definecolor{primary}{HTML}{${colorHex}}
-${fontPackage}
-\\usepackage{hyperref}
-\\usepackage{titlesec}
-\\usepackage{enumitem}
-
-% Section styling based on theme color
-\\titleformat{\\section}{\\Large\\bfseries\\color{primary}\\uppercase}{}{0em}{}[\\titlerule]
-\\titlespacing{\\section}{0pt}{12pt}{8pt}
-
-\\pagestyle{empty}
-
-\\begin{document}
-
+    // Different header styles based on template group
+    let headerLatex = "";
+    if (templateId === 'compact' || templateId === 'modern') {
+        headerLatex = `
+\\begin{minipage}[t]{0.70\\textwidth}
+    {\\Huge \\textbf{${esc(data.fullName)}}}\\\\
+    \\vspace{5pt}
+    {\\color{gray} ${esc(data.summary?.substring(0, 150))}...}
+\\end{minipage}
+\\begin{minipage}[t]{0.28\\textwidth}
+    \\raggedleft
+    {\\small
+    ${data.email ? `\\href{mailto:${esc(data.email)}}{${esc(data.email)}} \\\\` : ""}
+    ${data.phone ? `${esc(data.phone)} \\\\` : ""}
+    ${data.location ? `${esc(data.location)} \\\\` : ""}
+    }
+\\end{minipage}
+\\vspace{20pt}
+`;
+    } else {
+        // Default Centered Header
+        headerLatex = `
 \\begin{center}
     {\\Huge \\textbf{${esc(data.fullName)}}}\\\\
     \\vspace{5pt}
@@ -822,10 +925,33 @@ ${fontPackage}
     }
     ${data.socialLinks && data.socialLinks.filter(l => l.url).length > 0 ? `\\\\ \\vspace{3pt} {\\small ${data.socialLinks.filter(l => l.url).map(l => `${esc(l.platform)}: \\href{${l.url}}{${esc(l.url)}}`).join(" $\\cdot$ ")}}` : ""}
 \\end{center}
-
 \\vspace{10pt}
+`;
+    }
 
-${data.summary ? `
+    return `
+\\documentclass[a4paper,10pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[margin=0.75in]{geometry}
+\\usepackage{xcolor}
+\\usepackage{hyperref}
+\\usepackage{titlesec}
+\\usepackage{enumitem}
+
+\\definecolor{primary}{HTML}{${colorHex}}
+${fontPackage}
+
+% Section styling based on theme color
+\\titleformat{\\section}{\\Large\\bfseries\\color{primary}\\uppercase}{}{0em}{}[\\titlerule]
+\\titlespacing{\\section}{0pt}{12pt}{8pt}
+
+\\pagestyle{empty}
+
+\\begin{document}
+
+${headerLatex}
+
+${data.summary && !['compact', 'modern'].includes(templateId) ? `
 \\section*{Summary}
 ${esc(data.summary)}
 ` : ''}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppView, ResumeData } from './types';
+import { AppView, ResumeData, WizardInitialData } from './types';
 import ResumeBuilder from './components/ResumeBuilder';
 import AtsScorer from './components/AtsScorer';
 import ResumeAnalysis from './components/ResumeAnalysis';
@@ -7,10 +7,14 @@ import RoastResume from './components/RoastResume';
 import Profile from './components/Profile';
 import CareerRoadmap from './components/CareerRoadmap';
 import CoverLetterGenerator from './components/CoverLetterGenerator';
+import LandingPage from './components/LandingPage';
 import { useHistory } from './hooks/useHistory';
+import { parseRawResumeData } from './services/geminiService';
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
+  const [currentView, setCurrentView] = useState<AppView>(AppView.LANDING);
+  const [wizardInitialData, setWizardInitialData] = useState<WizardInitialData | null>(null);
+  const [scoreCheckText, setScoreCheckText] = useState<string>('');
   
   // Lifted state to share between Builder and Tailor - Now using useHistory
   const [resumeData, setResumeData, undo, redo, canUndo, canRedo] = useHistory<ResumeData>({
@@ -36,6 +40,60 @@ const App: React.FC = () => {
     font: 'sans'
   });
 
+  const handleImproveResume = async (text: string, improvements: string[]) => {
+      // 1. Parse text into wizard data
+      try {
+          const parsed = await parseRawResumeData(text);
+          // Attach improvements to be used by the Wizard AI
+          parsed.analysisImprovements = improvements;
+          setWizardInitialData(parsed);
+          // 2. Switch to Builder
+          setCurrentView(AppView.BUILDER);
+      } catch (e) {
+          console.error("Failed to parse resume for improvement", e);
+          alert("Could not parse resume for improvement. Starting fresh.");
+          setWizardInitialData(null);
+          setCurrentView(AppView.BUILDER);
+      }
+  };
+
+  const handleCheckScore = (data: ResumeData) => {
+      // Convert ResumeData object to a string representation for the scorer
+      const text = `
+Name: ${data.fullName}
+Email: ${data.email}
+Phone: ${data.phone}
+Location: ${data.location}
+
+Summary:
+${data.summary}
+
+Experience:
+${data.experience.map(e => `${e.role} at ${e.company} (${e.duration})\n${e.details}`).join('\n\n')}
+
+Projects:
+${data.projects.map(p => `${p.title} (${p.technologies})\n${p.link}\n${p.details}`).join('\n\n')}
+
+Education:
+${data.education.map(e => `${e.degree}, ${e.school}, ${e.year}`).join('\n')}
+
+Skills:
+${data.skills.join(', ')}
+
+Achievements:
+${data.achievements.join('\n')}
+      `;
+      
+      setScoreCheckText(text);
+      setCurrentView(AppView.ATS_SCORER);
+  };
+
+  // If on landing page, show full screen landing component
+  if (currentView === AppView.LANDING) {
+      return <LandingPage onStart={() => setCurrentView(AppView.DASHBOARD)} />;
+  }
+
+  // Otherwise, show the app layout
   const renderContent = () => {
     switch (currentView) {
       case AppView.BUILDER: 
@@ -47,10 +105,12 @@ const App: React.FC = () => {
             redo={redo}
             canUndo={canUndo}
             canRedo={canRedo}
+            initialWizardData={wizardInitialData}
+            onCheckScore={handleCheckScore}
           />
         );
       case AppView.ATS_SCORER: 
-        return <AtsScorer />;
+        return <AtsScorer onImprove={handleImproveResume} initialText={scoreCheckText} />;
       case AppView.OPTIMIZER: 
         return <ResumeAnalysis resumeData={resumeData} onNavigateToBuilder={() => setCurrentView(AppView.BUILDER)} />;
       case AppView.ROADMAP: 

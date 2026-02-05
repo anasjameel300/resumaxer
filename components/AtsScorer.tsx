@@ -1,12 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { analyzeAtsScore } from '../services/geminiService';
 import { AtsAnalysis } from '../types';
 
-const AtsScorer: React.FC = () => {
+interface AtsScorerProps {
+    onImprove?: (resumeText: string, improvements: string[]) => void;
+    initialText?: string;
+}
+
+const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText }) => {
   const [resumeText, setResumeText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [improving, setImproving] = useState(false);
   const [parsingFile, setParsingFile] = useState(false);
   const [analysis, setAnalysis] = useState<AtsAnalysis | null>(null);
+
+  // Auto-analyze if initial text is provided (coming back from Builder)
+  useEffect(() => {
+      if (initialText) {
+          setResumeText(initialText);
+          handleAnalyze(initialText);
+      }
+  }, [initialText]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -53,11 +67,13 @@ const AtsScorer: React.FC = () => {
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!resumeText.trim()) return;
+  const handleAnalyze = async (textToAnalyze?: string) => {
+    const text = textToAnalyze || resumeText;
+    if (!text.trim()) return;
+    
     setLoading(true);
     try {
-      const result = await analyzeAtsScore(resumeText);
+      const result = await analyzeAtsScore(text);
       setAnalysis(result);
     } catch (error) {
       console.error(error);
@@ -65,6 +81,15 @@ const AtsScorer: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImproveClick = async () => {
+      if (!onImprove || !analysis) return;
+      setImproving(true);
+      // Small delay to allow UI to update before heavy operation or navigation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await onImprove(resumeText, analysis.improvements);
+      setImproving(false);
   };
 
   return (
@@ -125,7 +150,7 @@ const AtsScorer: React.FC = () => {
 
           <div className="flex justify-center py-4">
             <button
-              onClick={handleAnalyze}
+              onClick={() => handleAnalyze()}
               disabled={loading || !resumeText || parsingFile}
               className={`px-10 py-4 rounded-full font-bold text-lg shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
                 ${loading || !resumeText 
@@ -145,12 +170,30 @@ const AtsScorer: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-8 animate-fade-in">
-             <button 
-             onClick={() => setAnalysis(null)}
-             className="mb-4 px-4 py-2 text-sm font-medium text-surface-600 bg-white border border-surface-300 rounded-lg hover:bg-surface-50 flex items-center gap-2 transition-colors shadow-sm"
-           >
-             <span>←</span> Analyze Another
-           </button>
+             <div className="flex justify-between items-center mb-4">
+                 <button 
+                    onClick={() => setAnalysis(null)}
+                    className="px-4 py-2 text-sm font-medium text-surface-600 bg-white border border-surface-300 rounded-lg hover:bg-surface-50 flex items-center gap-2 transition-colors shadow-sm"
+                >
+                    <span>←</span> Analyze Another
+                </button>
+                <button
+                    onClick={handleImproveClick}
+                    disabled={improving}
+                    className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-primary-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-primary-700 transition-all shadow-md flex items-center gap-2 disabled:opacity-75 disabled:cursor-wait"
+                >
+                    {improving ? (
+                         <>
+                             <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                             Preparing Wizard...
+                         </>
+                    ) : (
+                         <>
+                             <span>✨</span> Improve with AI
+                         </>
+                    )}
+                </button>
+             </div>
            
            <div className="bg-white rounded-2xl shadow-lg border border-surface-200 overflow-hidden">
                <div className="p-8 border-b border-surface-100 bg-surface-50/50 flex flex-col md:flex-row items-center justify-between gap-6">
