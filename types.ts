@@ -1,6 +1,7 @@
 
 export enum AppView {
   LANDING = 'LANDING',
+  ONBOARDING = 'ONBOARDING',
   DASHBOARD = 'DASHBOARD',
   BUILDER = 'BUILDER',
   ATS_SCORER = 'ATS_SCORER',
@@ -9,6 +10,7 @@ export enum AppView {
   PROFILE = 'PROFILE',
   ROADMAP = 'ROADMAP',
   COVER_LETTER = 'COVER_LETTER',
+  TRACKER = 'TRACKER',
 }
 
 export type TemplateId = 'modern' | 'classic' | 'creative' | 'minimalist' | 'standard' | 'executive' | 'compact' | 'elegant' | 'timeline';
@@ -25,7 +27,7 @@ export interface ResumeData {
   projects: ProjectItem[];
   education: EducationItem[];
   skills: string[];
-  achievements: string[]; 
+  achievements: string[];
   languages: LanguageItem[];
   themeColor?: string;
   font?: string;
@@ -122,4 +124,18 @@ export interface CareerRoadmapResponse {
   currentStatus: string;
   gapAnalysis: string;
   phases: RoadmapPhase[];
+}
+
+// --- Job Tracker Types ---
+export type ApplicationStatus = 'Saved' | 'Applied' | 'Interviewing' | 'Offer' | 'Rejected';
+
+export interface JobApplication {
+  id: string;
+  company: string;
+  role: string;
+  date: string;
+  status: ApplicationStatus;
+  salary?: string;
+  notes?: string;
+  url?: string;
 }
