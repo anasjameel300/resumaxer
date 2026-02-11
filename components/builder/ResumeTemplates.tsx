@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResumeData, TemplateId } from '../types';
+import { ResumeData, TemplateId } from '../../types';
 
 interface ResumePreviewProps {
     data: ResumeData;

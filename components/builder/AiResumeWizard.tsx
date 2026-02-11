@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ResumeData, WizardInitialData } from '../types';
-import { generateFullResume, generateClarificationQuestions } from '../services/geminiService';
+import { ResumeData, WizardInitialData } from '../../types';
+import { generateFullResume, generateClarificationQuestions } from '../../services/geminiService';
 
 interface AiResumeWizardProps {
   onComplete: (data: ResumeData, meta: { template: string, theme: string, font: string }) => void;

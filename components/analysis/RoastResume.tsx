@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { roastMyResume } from '../services/geminiService';
+import { roastMyResume } from '../../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 
 const PERSONAS = [

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { generateCareerRoadmap } from '../services/geminiService';
-import { ResumeData, CareerRoadmapResponse } from '../types';
+import { generateCareerRoadmap } from '../../services/geminiService';
+import { ResumeData, CareerRoadmapResponse } from '../../types';
 
 interface CareerRoadmapProps {
   data: ResumeData;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { generateCoverLetter } from '../services/geminiService';
-import { ResumeData } from '../types';
+import { generateCoverLetter } from '../../services/geminiService';
+import { ResumeData } from '../../types';
 
 interface CoverLetterGeneratorProps {
   data: ResumeData;

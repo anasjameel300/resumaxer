@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ResumeData, ExperienceItem, ProjectItem, EducationItem, TemplateId, LanguageItem, SocialLink, WizardInitialData } from '../types';
-import { generateResumeSummary } from '../services/geminiService';
+import { ResumeData, ExperienceItem, ProjectItem, EducationItem, TemplateId, LanguageItem, SocialLink, WizardInitialData } from '../../types';
+import { generateResumeSummary } from '../../services/geminiService';
 import ResumePreview from './ResumeTemplates';
 import AiResumeWizard from './AiResumeWizard';
 

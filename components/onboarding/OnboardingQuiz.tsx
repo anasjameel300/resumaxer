@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ResumeData } from '../types';
+import { ResumeData } from '../../types';
 
 interface OnboardingQuizProps {
   onComplete: (role: string, experienceLevel: string, targetRole: string) => void;

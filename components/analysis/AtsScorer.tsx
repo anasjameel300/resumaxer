@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { analyzeAtsScore } from '../services/geminiService';
-import { AtsAnalysis } from '../types';
+import { analyzeAtsScore } from '../../services/geminiService';
+import { AtsAnalysis } from '../../types';
 
 interface AtsScorerProps {
     onImprove?: (resumeText: string, improvements: string[]) => void;

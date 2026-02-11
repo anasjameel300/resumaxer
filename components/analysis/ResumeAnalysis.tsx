@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { tailorResume } from '../services/geminiService';
-import { ResumeData } from '../types';
+import { tailorResume } from '../../services/geminiService';
+import { ResumeData } from '../../types';
 import ReactMarkdown from 'react-markdown';
 
 interface ResumeAnalysisProps {

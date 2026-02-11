@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { JobApplication, ApplicationStatus } from '../types';
+import { JobApplication, ApplicationStatus } from '../../types';
 
 const STATUS_COLUMNS: { id: ApplicationStatus; label: string; color: string; icon: string }[] = [
   { id: 'Saved', label: 'Saved', color: 'bg-gray-100 border-gray-200', icon: '🔖' },

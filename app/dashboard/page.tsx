@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import { AppView, ResumeData, WizardInitialData } from '@/types';
-import ResumeBuilder from '@/components/ResumeBuilder';
-import AtsScorer from '@/components/AtsScorer';
-import ResumeAnalysis from '@/components/ResumeAnalysis';
-import RoastResume from '@/components/RoastResume';
-import Profile from '@/components/Profile';
-import CareerRoadmap from '@/components/CareerRoadmap';
-import CoverLetterGenerator from '@/components/CoverLetterGenerator';
-import OnboardingQuiz from '@/components/OnboardingQuiz';
-import JobTracker from '@/components/JobTracker';
+import ResumeBuilder from '@/components/builder/ResumeBuilder';
+import AtsScorer from '@/components/analysis/AtsScorer';
+import ResumeAnalysis from '@/components/analysis/ResumeAnalysis';
+import RoastResume from '@/components/analysis/RoastResume';
+import Profile from '@/components/profile/Profile';
+import CareerRoadmap from '@/components/roadmap/CareerRoadmap';
+import CoverLetterGenerator from '@/components/cover-letter/CoverLetterGenerator';
+import OnboardingQuiz from '@/components/onboarding/OnboardingQuiz';
+import JobTracker from '@/components/tracker/JobTracker';
 import { useHistory } from '@/hooks/useHistory';
 import { parseRawResumeData } from '@/services/geminiService';
 
