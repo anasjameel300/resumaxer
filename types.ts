@@ -27,7 +27,7 @@ export interface ResumeData {
   projects: ProjectItem[];
   education: EducationItem[];
   skills: string[];
-  achievements: string[];
+  achievements: string[]; 
   languages: LanguageItem[];
   themeColor?: string;
   font?: string;
