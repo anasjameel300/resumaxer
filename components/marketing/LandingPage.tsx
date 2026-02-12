@@ -3,6 +3,7 @@
 import React from 'react';
 import { Navbar } from './Navbar';
 import { Hero } from './Hero';
+import { ProblemSection } from './ProblemSection';
 import { ResumeComparison } from './ResumeComparison';
 import { BentoFeatures } from './BentoFeatures';
 import { Footer } from './Footer';
@@ -17,6 +18,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         <div className="min-h-screen bg-background text-foreground font-sans selection:bg-indigo-500/30 selection:text-indigo-100 overflow-x-hidden">
             <Navbar onStart={onStart} />
             <Hero onStart={onStart} />
+            <ProblemSection />
             <BentoFeatures />
             <ResumeComparison />
             <Pricing />
