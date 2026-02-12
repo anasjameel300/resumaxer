@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 
-export const Hero = () => {
+export const Hero = ({ onStart }: { onStart: () => void }) => {
     return (
         <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
             {/* Background Elements */}
@@ -63,11 +63,11 @@ export const Hero = () => {
                     transition={{ duration: 0.5, delay: 0.3 }}
                     className="flex flex-col sm:flex-row items-center justify-center gap-4"
                 >
-                    <Button size="lg" variant="glow" className="h-14 px-8 text-lg rounded-full w-full sm:w-auto hover:scale-105 transition-transform">
+                    <Button size="lg" variant="glow" className="h-14 px-8 text-lg rounded-full w-full sm:w-auto hover:scale-105 transition-transform" onClick={onStart}>
                         <Sparkles className="mr-2 h-5 w-5" />
                         Build My Resume
                     </Button>
-                    <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full w-full sm:w-auto hover:bg-white/5 border-white/10">
+                    <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full w-full sm:w-auto hover:bg-white/5 border-white/10" onClick={onStart}>
                         Check ATS Score
                         <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>

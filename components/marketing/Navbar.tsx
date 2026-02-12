@@ -6,7 +6,7 @@ import { Menu, X, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-export const Navbar = () => {
+export const Navbar = ({ onStart }: { onStart: () => void }) => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -60,10 +60,10 @@ export const Navbar = () => {
 
                 {/* CTA */}
                 <div className="hidden md:flex items-center gap-4">
-                    <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                    <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onStart}>
                         Log In
                     </Button>
-                    <Button variant="glow" className="rounded-full px-6">
+                    <Button variant="glow" className="rounded-full px-6" onClick={onStart}>
                         Get Started
                     </Button>
                 </div>
@@ -97,10 +97,10 @@ export const Navbar = () => {
                             </a>
                         ))}
                         <div className="flex flex-col gap-3 mt-4">
-                            <Button variant="outline" className="w-full justify-center">
+                            <Button variant="outline" className="w-full justify-center" onClick={onStart}>
                                 Log In
                             </Button>
-                            <Button variant="glow" className="w-full justify-center">
+                            <Button variant="glow" className="w-full justify-center" onClick={onStart}>
                                 Get Started
                             </Button>
                         </div>

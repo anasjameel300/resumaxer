@@ -6,6 +6,7 @@ import { Hero } from './Hero';
 import { ResumeComparison } from './ResumeComparison';
 import { BentoFeatures } from './BentoFeatures';
 import { Footer } from './Footer';
+import { Pricing } from './Pricing';
 
 interface LandingPageProps {
     onStart: () => void;
@@ -14,10 +15,11 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     return (
         <div className="min-h-screen bg-background text-foreground font-sans selection:bg-indigo-500/30 selection:text-indigo-100 overflow-x-hidden">
-            <Navbar />
-            <Hero />
+            <Navbar onStart={onStart} />
+            <Hero onStart={onStart} />
             <BentoFeatures />
             <ResumeComparison />
+            <Pricing />
             <Footer />
         </div>
     );

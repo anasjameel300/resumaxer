@@ -16,7 +16,7 @@ export const ResumeComparison = () => {
     };
 
     return (
-        <section className="py-32 bg-background relative overflow-hidden">
+        <section id="templates" className="py-32 bg-background relative overflow-hidden">
             <div className="max-w-7xl mx-auto px-6">
                 <div className="flex flex-col md:flex-row gap-16 items-center">
                     {/* Text Content */}
