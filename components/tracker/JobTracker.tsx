@@ -1,12 +1,37 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { JobApplication, ApplicationStatus } from '../../types';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  Building2,
+  MapPin,
+  CalendarDays,
+  DollarSign,
+  Briefcase,
+  Plus,
+  X,
+  MoreVertical,
+  Trash2,
+  Bookmark,
+  Send,
+  MessageSquare,
+  CheckCircle2,
+  XCircle,
+  GripVertical
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const STATUS_COLUMNS: { id: ApplicationStatus; label: string; color: string; icon: string }[] = [
-  { id: 'Saved', label: 'Saved', color: 'bg-gray-100 border-gray-200', icon: '🔖' },
-  { id: 'Applied', label: 'Applied', color: 'bg-blue-50 border-blue-200', icon: '📤' },
-  { id: 'Interviewing', label: 'Interviewing', color: 'bg-purple-50 border-purple-200', icon: '🎤' },
-  { id: 'Offer', label: 'Offer', color: 'bg-green-50 border-green-200', icon: '🎉' },
-  { id: 'Rejected', label: 'Rejected', color: 'bg-red-50 border-red-200', icon: '🚫' },
+const STATUS_COLUMNS: { id: ApplicationStatus; label: string; color: string; icon: React.ReactNode; border: string }[] = [
+  { id: 'Saved', label: 'Saved', color: 'from-gray-500/20 to-gray-600/5', border: 'border-gray-500/50', icon: <Bookmark className="w-4 h-4 text-gray-400" /> },
+  { id: 'Applied', label: 'Applied', color: 'from-blue-500/20 to-blue-600/5', border: 'border-blue-500/50', icon: <Send className="w-4 h-4 text-blue-400" /> },
+  { id: 'Interviewing', label: 'Interviewing', color: 'from-purple-500/20 to-purple-600/5', border: 'border-purple-500/50', icon: <MessageSquare className="w-4 h-4 text-purple-400" /> },
+  { id: 'Offer', label: 'Offer', color: 'from-emerald-500/20 to-emerald-600/5', border: 'border-emerald-500/50', icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" /> },
+  { id: 'Rejected', label: 'Rejected', color: 'from-red-500/20 to-red-600/5', border: 'border-red-500/50', icon: <XCircle className="w-4 h-4 text-red-400" /> },
 ];
 
 const JobTracker: React.FC = () => {
@@ -20,7 +45,7 @@ const JobTracker: React.FC = () => {
 
   const [isAdding, setIsAdding] = useState(false);
   const [newJob, setNewJob] = useState<Partial<JobApplication>>({ status: 'Saved' });
-  
+
   // Drag and Drop State
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ApplicationStatus | null>(null);
@@ -52,11 +77,10 @@ const JobTracker: React.FC = () => {
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = 'move';
-    // Transparent drag image hack if needed, but default is usually fine
   };
 
   const handleDragOver = (e: React.DragEvent, status: ApplicationStatus) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault();
     setDragOverColumn(status);
   };
 
@@ -69,140 +93,190 @@ const JobTracker: React.FC = () => {
     setDragOverColumn(null);
     if (!draggedId) return;
 
-    setApplications(apps => 
-        apps.map(app => 
-            app.id === draggedId ? { ...app, status: newStatus } : app
-        )
+    setApplications(apps =>
+      apps.map(app =>
+        app.id === draggedId ? { ...app, status: newStatus } : app
+      )
     );
     setDraggedId(null);
   };
 
   return (
-    <div className="h-full flex flex-col animate-fade-in pb-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="h-full flex flex-col animate-in fade-in duration-500 pb-6">
+      <div className="flex justify-between items-center mb-8">
         <div>
-           <h2 className="text-3xl font-bold text-surface-900 tracking-tight">Application Tracker</h2>
-           <p className="text-surface-500 mt-1">Drag and drop cards to update your progress.</p>
+          <h2 className="text-3xl font-heading font-bold text-foreground tracking-tight flex items-center gap-3">
+            <Briefcase className="w-8 h-8 text-primary" />
+            Job Board
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">Visualize your application pipeline.</p>
         </div>
-        <button 
+        <Button
           onClick={() => setIsAdding(true)}
-          className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary-900/20 flex items-center gap-2 transition-all transform hover:-translate-y-0.5 active:scale-95"
+          className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-105"
         >
-          <span>+</span> Add Job
-        </button>
+          <Plus className="w-4 h-4 mr-2" /> Add Application
+        </Button>
       </div>
 
       {/* Add Modal */}
-      {isAdding && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl transform transition-all scale-100">
-              <h3 className="text-xl font-bold mb-4 text-surface-900">Add New Application</h3>
+      <AnimatePresence>
+        {isAdding && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+            >
+              <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-muted-foreground hover:text-white" onClick={() => setIsAdding(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+
+              <h3 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
+                <Plus className="w-5 h-5 text-primary" /> New Job
+              </h3>
+
               <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-surface-500 uppercase">Company</label>
-                    <input type="text" className="input-field" autoFocus value={newJob.company || ''} onChange={e => setNewJob({...newJob, company: e.target.value})} placeholder="e.g. Airbnb" />
+                <div className="space-y-1.5">
+                  <Label>Company</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    <Input autoFocus value={newJob.company || ''} onChange={e => setNewJob({ ...newJob, company: e.target.value })} placeholder="e.g. Acme Corp" className="pl-9 bg-zinc-950/50 border-white/10" />
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-surface-500 uppercase">Role</label>
-                    <input type="text" className="input-field" value={newJob.role || ''} onChange={e => setNewJob({...newJob, role: e.target.value})} placeholder="e.g. Software Engineer" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Role</Label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    <Input value={newJob.role || ''} onChange={e => setNewJob({ ...newJob, role: e.target.value })} placeholder="e.g. Senior Engineer" className="pl-9 bg-zinc-950/50 border-white/10" />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <label className="text-xs font-bold text-surface-500 uppercase">Salary (Optional)</label>
-                        <input type="text" className="input-field" value={newJob.salary || ''} onChange={e => setNewJob({...newJob, salary: e.target.value})} placeholder="e.g. $120k" />
-                     </div>
-                     <div>
-                        <label className="text-xs font-bold text-surface-500 uppercase">Status</label>
-                        <select className="input-field" value={newJob.status} onChange={e => setNewJob({...newJob, status: e.target.value as ApplicationStatus})}>
-                            {STATUS_COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                        </select>
-                     </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Salary</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                      <Input value={newJob.salary || ''} onChange={e => setNewJob({ ...newJob, salary: e.target.value })} placeholder="$140k" className="pl-9 bg-zinc-950/50 border-white/10" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-surface-500 uppercase">Notes</label>
-                    <textarea className="input-field h-20 resize-none" value={newJob.notes || ''} onChange={e => setNewJob({...newJob, notes: e.target.value})} placeholder="Referral, key contacts, etc." />
+                  <div className="space-y-1.5">
+                    <Label>Status</Label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-white/10 bg-zinc-950/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={newJob.status}
+                      onChange={e => setNewJob({ ...newJob, status: e.target.value as ApplicationStatus })}
+                    >
+                      {STATUS_COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    </select>
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Notes</Label>
+                  <Textarea
+                    className="h-24 resize-none bg-zinc-950/50 border-white/10"
+                    value={newJob.notes || ''}
+                    onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
+                    placeholder="Hiring manager context, referral info..."
+                  />
+                </div>
               </div>
-              <div className="flex gap-3 mt-6">
-                  <button onClick={() => setIsAdding(false)} className="flex-1 py-3 text-surface-600 font-bold hover:bg-surface-50 rounded-xl transition-colors">Cancel</button>
-                  <button onClick={addApplication} className="flex-1 py-3 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 shadow-md transition-colors">Save Job</button>
+              <div className="flex gap-3 mt-8">
+                <Button variant="outline" onClick={() => setIsAdding(false)} className="flex-1 border-white/10 hover:bg-white/5">Cancel</Button>
+                <Button onClick={addApplication} className="flex-1">Create Card</Button>
               </div>
-           </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto pb-4">
-        <div className="flex gap-6 min-w-[1200px] h-full">
-           {STATUS_COLUMNS.map(column => {
-              const columnApps = applications.filter(a => a.status === column.id);
-              const isOver = dragOverColumn === column.id;
-              
-              return (
-                 <div 
-                    key={column.id} 
-                    className="flex-1 flex flex-col min-w-[280px] h-full"
-                    onDragOver={(e) => handleDragOver(e, column.id)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, column.id)}
-                 >
-                    {/* Column Header */}
-                    <div className={`flex items-center justify-between p-4 rounded-t-xl border-t border-l border-r border-b-0 shadow-sm z-10 ${column.color}`}>
-                       <div className="flex items-center gap-2 font-bold text-surface-700">
-                          <span className="text-lg">{column.icon}</span>
-                          <span>{column.label}</span>
-                          <span className="bg-white px-2 py-0.5 rounded-full text-xs font-bold shadow-sm text-surface-500 min-w-[24px] text-center">{columnApps.length}</span>
-                       </div>
-                    </div>
+      <div className="flex-1 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+        <div className="flex gap-6 min-w-[1200px] h-full px-1">
+          {STATUS_COLUMNS.map(column => {
+            const columnApps = applications.filter(a => a.status === column.id);
+            const isOver = dragOverColumn === column.id;
 
-                    {/* Drop Zone / Content Area */}
-                    <div className={`flex-1 p-3 rounded-b-xl border border-t-0 space-y-3 transition-colors duration-200 
-                        ${column.color.split(' ')[1]} 
-                        ${isOver ? 'bg-primary-50/80 ring-2 ring-primary-300 ring-inset' : 'bg-surface-50/50'}
-                    `}>
-                        {columnApps.map(app => (
-                           <div 
-                                key={app.id} 
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, app.id)}
-                                className={`bg-white p-4 rounded-xl shadow-sm border border-surface-200 hover:shadow-md transition-all group relative cursor-grab active:cursor-grabbing
-                                    ${draggedId === app.id ? 'opacity-50 rotate-3 scale-95' : 'hover:-translate-y-1'}
-                                `}
-                           >
-                               <div className="flex justify-between items-start mb-2">
-                                  <h4 className="font-bold text-surface-900 leading-tight">{app.company}</h4>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); deleteApplication(app.id); }}
-                                    className="text-surface-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mt-2 -mr-2"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                  </button>
-                               </div>
-                               <div className="text-sm text-primary-600 font-medium mb-3">{app.role}</div>
-                               <div className="flex justify-between items-center text-xs text-surface-500">
-                                   <span className="flex items-center gap-1">
-                                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                       {app.date}
-                                   </span>
-                                   {app.salary && <span className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-100 font-bold">{app.salary}</span>}
-                               </div>
-                               {app.notes && (
-                                   <div className="mt-3 pt-3 border-t border-surface-100 text-xs text-surface-500 italic truncate flex items-center gap-1">
-                                       <svg className="w-3 h-3 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                       {app.notes}
-                                   </div>
-                               )}
-                           </div>
-                        ))}
-                        {columnApps.length === 0 && (
-                            <div className="h-full min-h-[100px] flex items-center justify-center border-2 border-dashed border-surface-200/50 rounded-lg">
-                                <span className="text-surface-400 text-sm italic">Drop here</span>
-                            </div>
-                        )}
+            return (
+              <div
+                key={column.id}
+                className="flex-1 flex flex-col min-w-[260px] h-full"
+                onDragOver={(e) => handleDragOver(e, column.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, column.id)}
+              >
+                {/* Column Header */}
+                <div className={cn(
+                  "flex items-center justify-between p-4 rounded-t-xl backdrop-blur-sm border-t border-x border-b-0 transition-colors",
+                  "bg-gradient-to-b border-white/5",
+                  column.color
+                )}>
+                  <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-muted-foreground">
+                    {column.icon}
+                    <span>{column.label}</span>
+                  </div>
+                  <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/20 border-0">{columnApps.length}</Badge>
+                </div>
+
+                {/* Drop Zone */}
+                <div className={cn(
+                  "flex-1 p-3 rounded-b-xl border border-t-0 space-y-3 transition-colors duration-200 bg-zinc-900/20",
+                  "border-white/5",
+                  isOver && "bg-white/5 ring-1 ring-inset ring-white/10"
+                )}>
+                  {columnApps.map(app => (
+                    <motion.div
+                      layoutId={app.id}
+                      key={app.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e as any, app.id)}
+                      className={cn(
+                        "bg-zinc-900 p-4 rounded-xl border border-white/5 hover:border-white/20 shadow-sm transition-all group relative cursor-grab active:cursor-grabbing",
+                        draggedId === app.id ? 'opacity-30' : 'hover:shadow-md hover:-translate-y-1'
+                      )}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-foreground leading-tight">{app.company}</h4>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteApplication(app.id); }}
+                          className="text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mt-2 -mr-2"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">{app.role}</div>
+
+                      <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <CalendarDays className="w-3 h-3" />
+                          {app.date}
+                        </span>
+                        {app.salary && <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-green-500/30 text-green-400 bg-green-500/10">{app.salary}</Badge>}
+                      </div>
+
+                      {app.notes && (
+                        <div className="mt-3 pt-3 border-t border-white/5 text-xs text-zinc-400 italic truncate flex items-center gap-1.5">
+                          <GripVertical className="w-3 h-3 text-zinc-600" />
+                          {app.notes}
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+
+                  {columnApps.length === 0 && (
+                    <div className="h-24 flex items-center justify-center border-2 border-dashed border-white/5 rounded-lg">
+                      <span className="text-zinc-600 text-xs font-medium">Empty</span>
                     </div>
-                 </div>
-              )
-           })}
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

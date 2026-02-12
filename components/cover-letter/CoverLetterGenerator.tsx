@@ -1,6 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { generateCoverLetter } from '../../services/geminiService';
 import { ResumeData } from '../../types';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  PenTool,
+  Printer,
+  RefreshCw,
+  Sparkles,
+  FileText,
+  AlertTriangle,
+  Download,
+  ArrowLeft
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CoverLetterGeneratorProps {
   data: ResumeData;
@@ -11,6 +26,7 @@ const CoverLetterGenerator: React.FC<CoverLetterGeneratorProps> = ({ data, onNav
   const [jdText, setJdText] = useState('');
   const [generatedLetter, setGeneratedLetter] = useState('');
   const [loading, setLoading] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const hasData = data.experience.length > 0 || data.projects.length > 0 || data.summary.length > 0;
 
@@ -29,125 +45,195 @@ const CoverLetterGenerator: React.FC<CoverLetterGeneratorProps> = ({ data, onNav
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!printRef.current) return;
+
+    // Create a temporary iframe to print only the content
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    document.body.appendChild(iframe);
+
+    const content = printRef.current.innerHTML;
+    const doc = iframe.contentWindow?.document;
+
+    if (doc) {
+      doc.open();
+      doc.write(`
+            <html>
+                <head>
+                    <title>Cover Letter</title>
+                    <style>
+                        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; padding: 40px; color: black; }
+                        p { margin-bottom: 1em; }
+                    </style>
+                </head>
+                <body>
+                    ${content.replace(/\n/g, '<br/>')}
+                </body>
+            </html>
+        `);
+      doc.close();
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    }
+
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 1000);
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-12">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-surface-900 tracking-tight">Cover Letter Generator</h2>
-        <p className="text-surface-500 mt-2 text-lg">
-          Turn your resume and a job description into a persuasive cover letter in seconds.
-        </p>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700 pb-20">
+      {!generatedLetter && (
+        <div className="text-center mb-12 space-y-4">
+          <h2 className="text-4xl md:text-5xl font-heading font-bold text-foreground tracking-tight">
+            Cover Letter <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-600">Generator</span>
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Turn your resume and a job description into a persuasive cover letter in seconds.
+          </p>
+        </div>
+      )}
 
-      {!generatedLetter ? (
-        <div className="max-w-3xl mx-auto space-y-8">
-          {/* Data Check */}
-          {!hasData && (
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-4">
-              <span className="text-2xl">⚠️</span>
-              <div>
-                <h4 className="font-bold text-amber-900">Resume Data Missing</h4>
-                <p className="text-sm text-amber-700 mt-1">
-                  We don't see much info in your profile. The cover letter might be generic. 
-                  <button onClick={onNavigateToBuilder} className="underline font-bold ml-1 hover:text-amber-900">
-                    Add details in Builder first.
-                  </button>
-                </p>
+      <AnimatePresence mode="wait">
+        {!generatedLetter ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-3xl mx-auto space-y-8"
+          >
+            {/* Data Check */}
+            {!hasData && (
+              <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex items-start gap-4 text-amber-500">
+                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-sm">Resume Data Missing</h4>
+                  <p className="text-xs mt-1 text-amber-400/80 leading-relaxed">
+                    We don't see much info in your profile. The cover letter might be generic.
+                    <Button variant="link" onClick={onNavigateToBuilder} className="text-amber-400 p-0 h-auto font-bold ml-1 hover:text-amber-300">
+                      Add details in Builder first.
+                    </Button>
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-surface-200">
-            <label className="label-text text-lg mb-3">Paste the Job Description</label>
-            <textarea
-              className="input-field h-64 resize-none text-sm leading-relaxed"
-              placeholder="Paste the full job description here (Responsibilities, Requirements, etc.)..."
-              value={jdText}
-              onChange={(e) => setJdText(e.target.value)}
-            />
-            
-            <div className="mt-6 flex justify-end">
-              <button
+            <Card className="bg-zinc-900/40 border-white/5 backdrop-blur-md">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-2 mb-4 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  <FileText className="w-4 h-4 text-primary" /> Target Job Description
+                </div>
+                <Textarea
+                  className="min-h-[300px] resize-y bg-zinc-950/50 border-white/10 text-sm leading-relaxed font-mono focus:ring-primary/50"
+                  placeholder="Paste the full job description here (Responsibilities, Requirements, etc.)..."
+                  value={jdText}
+                  onChange={(e) => setJdText(e.target.value)}
+                />
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center">
+              <Button
                 onClick={handleGenerate}
                 disabled={loading || !jdText}
-                className={`px-8 py-3 rounded-xl font-bold text-white shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-2
-                  ${loading || !jdText 
-                      ? 'bg-surface-300 cursor-not-allowed' 
-                      : 'bg-primary-600 hover:bg-primary-700 hover:shadow-primary-900/20'}`}
+                size="lg"
+                className={cn(
+                  "px-8 py-6 text-lg rounded-xl shadow-lg transition-all hover:scale-105",
+                  "bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white border-0 shadow-emerald-900/20"
+                )}
               >
                 {loading ? (
                   <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    Drafting...
+                    <RefreshCw className="w-5 h-5 animate-spin mr-3" />
+                    Drafting Letter...
                   </>
                 ) : (
                   <>
-                    <span>✨</span> Generate Letter
+                    <PenTool className="w-5 h-5 mr-3" /> Generate Letter
                   </>
                 )}
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Controls - Left Side */}
-          <div className="lg:col-span-4 space-y-6">
-             <div className="bg-white p-6 rounded-2xl shadow-sm border border-surface-200">
-                <h3 className="font-bold text-surface-900 mb-4">Actions</h3>
-                <div className="space-y-3">
-                    <button 
-                      onClick={handlePrint}
-                      className="w-full py-3 px-4 bg-surface-900 text-white rounded-lg font-bold hover:bg-black transition-colors flex items-center justify-center gap-2 shadow-md"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                      Download PDF
-                    </button>
-                    <button 
-                      onClick={() => setGeneratedLetter('')}
-                      className="w-full py-3 px-4 bg-white border border-surface-300 text-surface-600 rounded-lg font-bold hover:bg-surface-50 transition-colors"
-                    >
-                      Start Over
-                    </button>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+          >
+            {/* Controls - Left Side */}
+            <div className="lg:col-span-4 space-y-6">
+              <Card className="bg-zinc-900 border-white/5 overflow-hidden">
+                <div className="p-6 bg-white/5 border-b border-white/5">
+                  <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-400" /> Actions
+                  </h3>
                 </div>
-             </div>
+                <CardContent className="p-6 space-y-4">
+                  <Button
+                    onClick={handlePrint}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
+                  >
+                    <Download className="w-4 h-4 mr-2" /> Download / Print PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setGeneratedLetter('')}
+                    className="w-full border-white/10 hover:bg-white/5 text-muted-foreground"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Start Over
+                  </Button>
+                </CardContent>
+              </Card>
 
-             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100">
-                <h3 className="font-bold text-primary-900 mb-2">Tips</h3>
-                <ul className="text-sm text-primary-700 space-y-2 list-disc ml-4">
-                   <li>Review the letter for accuracy.</li>
-                   <li>Add specific anecdotes AI might have missed.</li>
-                   <li>Ensure the tone matches the company culture.</li>
-                </ul>
-             </div>
-          </div>
+              <Card className="bg-blue-500/5 border-blue-500/10">
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-blue-400 mb-2 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4" /> Pro Tips
+                  </h3>
+                  <ul className="text-xs text-blue-300 space-y-2 list-disc ml-4 leading-relaxed">
+                    <li>Review the letter for factual accuracy.</li>
+                    <li>Add specific anecdotes the AI might have missed.</li>
+                    <li>Ensure the tone matches the company culture perfectly.</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* Editor - Right Side */}
-          <div className="lg:col-span-8">
-             <div className="bg-white rounded-2xl shadow-xl border border-surface-200 overflow-hidden">
-                <div className="bg-surface-50 px-6 py-4 border-b border-surface-200 flex justify-between items-center">
-                   <span className="font-bold text-surface-500 text-sm uppercase tracking-wide">Document Preview</span>
-                   <div className="flex gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                      <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                      <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                   </div>
+            {/* Editor - Right Side */}
+            <div className="lg:col-span-8">
+              <Card className="bg-white text-zinc-900 rounded-sm shadow-2xl overflow-hidden relative">
+                {/* Paper Texture/Header */}
+                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 to-cyan-500" />
+
+                <div className="bg-zinc-50 px-8 py-4 border-b border-zinc-200 flex justify-between items-center print:hidden">
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400/80"></div>
+                    <div className="w-3 h-3 rounded-full bg-amber-400/80"></div>
+                    <div className="w-3 h-3 rounded-full bg-emerald-400/80"></div>
+                  </div>
+                  <span className="font-bold text-zinc-400 text-xs uppercase tracking-wide">Document Preview</span>
                 </div>
-                
+
                 {/* Print Container */}
-                <div id="cover-letter-container" className="p-10 md:p-16 min-h-[800px] bg-white text-surface-800">
-                   <textarea 
-                      className="w-full h-full min-h-[700px] resize-none outline-none border-none p-0 text-base leading-relaxed font-serif text-justify bg-transparent"
-                      value={generatedLetter}
-                      onChange={(e) => setGeneratedLetter(e.target.value)}
-                   />
+                <div className="p-12 md:p-16 min-h-[800px] bg-white relative">
+                  <div ref={printRef} className="hidden print:block whitespace-pre-wrap font-serif text-black leading-relaxed text-sm">
+                    {generatedLetter}
+                  </div>
+                  <textarea
+                    className="w-full h-full min-h-[700px] resize-none outline-none border-none p-0 text-base leading-loose font-serif text-justify bg-transparent text-zinc-800 placeholder:text-zinc-300 focus:ring-0 selection:bg-emerald-100 selection:text-emerald-900"
+                    value={generatedLetter}
+                    onChange={(e) => setGeneratedLetter(e.target.value)}
+                  />
                 </div>
-             </div>
-          </div>
-        </div>
-      )}
+              </Card>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
