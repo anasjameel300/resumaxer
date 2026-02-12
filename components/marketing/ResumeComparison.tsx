@@ -1,45 +1,107 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { MousePointer2 } from "lucide-react";
+import { CheckCircle2, MousePointer2, ScanLine, Briefcase, GraduationCap, Code2, Globe } from "lucide-react";
 
 export const ResumeComparison = () => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const maskedRef = useRef<HTMLDivElement>(null); // Ref for the masked element
+
     const [isHovering, setIsHovering] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     // Mouse Position State
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Smooth physics for the lens movement
+    const lensX = useSpring(mouseX, { stiffness: 400, damping: 30 });
+    const lensY = useSpring(mouseY, { stiffness: 400, damping: 30 });
+
+    useEffect(() => {
+        setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
+        let controls: number;
+
+        const startAutoScan = () => {
+            if (isHovering || !containerRef.current) return;
+
+            const width = containerRef.current.offsetWidth;
+            const height = containerRef.current.offsetHeight;
+
+            const time = Date.now() / 2000;
+            const x = (Math.sin(time) + 1) * 0.5 * width;
+            const y = (Math.cos(time * 0.7) + 1) * 0.5 * height;
+
+            mouseX.set(x);
+            mouseY.set(y);
+
+            controls = requestAnimationFrame(startAutoScan);
+        };
+
+        if (!isHovering) {
+            controls = requestAnimationFrame(startAutoScan);
+        }
+
+        return () => cancelAnimationFrame(controls);
+    }, [isHovering, mouseX, mouseY]);
+
+    // Optimize the mask update loop
+    useEffect(() => {
+        const updateMask = () => {
+            if (maskedRef.current) {
+                const x = lensX.get();
+                const y = lensY.get();
+                maskedRef.current.style.setProperty("--x", `${x}px`);
+                maskedRef.current.style.setProperty("--y", `${y}px`);
+            }
+            requestAnimationFrame(updateMask);
+        };
+        const animationId = requestAnimationFrame(updateMask);
+        return () => cancelAnimationFrame(animationId);
+    }, [lensX, lensY]);
+
+
+    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
         if (!containerRef.current) return;
+
+        let clientX, clientY;
+        if ('touches' in e) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = (e as React.MouseEvent).clientX;
+            clientY = (e as React.MouseEvent).clientY;
+        }
+
         const rect = containerRef.current.getBoundingClientRect();
-        mouseX.set(e.clientX - rect.left);
-        mouseY.set(e.clientY - rect.top);
+        mouseX.set(clientX - rect.left);
+        mouseY.set(clientY - rect.top);
         setIsHovering(true);
-    };
+    }, [mouseX, mouseY]);
 
     const handleMouseLeave = () => {
         setIsHovering(false);
     };
 
-    // Smooth physics for the lens movement
-    const lensX = useSpring(mouseX, { stiffness: 150, damping: 15 });
-    const lensY = useSpring(mouseY, { stiffness: 150, damping: 15 });
-
     return (
-        <section id="comparison" className="py-32 bg-background relative overflow-hidden">
-            <div className="max-w-7xl mx-auto px-6">
-                <div className="flex flex-col gap-16 items-center text-center mb-12">
-                    <div className="space-y-4 max-w-3xl">
-                        <h2 className="text-4xl md:text-5xl font-heading font-bold text-foreground leading-tight">
-                            The <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-600">Reality Lens.</span>
+        <section id="comparison" className="py-24 md:py-32 bg-background relative overflow-hidden">
+            {/* Background Gradients */}
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/10 via-background to-background pointer-events-none" />
+
+            <div className="max-w-7xl mx-auto px-6 relative z-10">
+                <div className="flex flex-col gap-8 items-center text-center mb-16">
+                    <div className="space-y-6 max-w-3xl">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium uppercase tracking-wider">
+                            <ScanLine className="w-3 h-3" />
+                            Recruiter Vision
+                        </div>
+                        <h2 className="text-4xl md:text-6xl font-heading font-bold text-foreground leading-tight tracking-tight">
+                            The <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Reality Lens.</span>
                         </h2>
-                        <p className="text-muted-foreground text-lg leading-relaxed">
-                            See what recruiters look for. Hover over the document to reveal the hidden optimizations that maximize your chances.
+                        <p className="text-muted-foreground text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
+                            Recruiters scan resumes in <span className="text-foreground font-semibold">6 seconds</span>. Hover to reveal how a Resumaxer resume cuts through the noise.
                         </p>
                     </div>
                 </div>
@@ -48,147 +110,207 @@ export const ResumeComparison = () => {
                 <div
                     ref={containerRef}
                     onMouseMove={handleMouseMove}
+                    onTouchMove={handleMouseMove}
                     onMouseLeave={handleMouseLeave}
-                    className="w-full max-w-5xl mx-auto relative h-[700px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden group select-none bg-zinc-900 cursor-none"
+                    onTouchEnd={handleMouseLeave}
+                    className="w-full max-w-5xl mx-auto relative h-[600px] md:h-[800px] rounded-3xl border border-white/10 shadow-2xl overflow-hidden group select-none bg-zinc-950 cursor-crosshair transform transition-transform duration-500 hover:scale-[1.005]"
                 >
 
-                    {/* Image 1: Bad Resume (Background - Blurred & Darkened) */}
-                    <div className="absolute inset-0 bg-zinc-950 p-12 font-mono text-xs text-gray-600 filter blur-[2px] opacity-50 grayscale transition-all duration-500">
-                        <div className="absolute inset-0 bg-red-500/5 z-0 pointer-events-none" />
-                        <div className="relative z-10 space-y-8 max-w-3xl mx-auto">
-                            <div className="space-y-2">
-                                <div className="text-black bg-zinc-800 w-1/3 h-8"></div>
-                                <div className="bg-zinc-800 w-full h-4"></div>
-                            </div>
+                    {/* ------------------------------------------------------------ */}
+                    {/* LAYER 1: THE "BAD" RESUME (Hidden/Messy/Chaos)               */}
+                    {/* ------------------------------------------------------------ */}
+                    <div className="absolute inset-0 bg-white p-6 md:p-12 font-serif text-zinc-900 overflow-hidden filter blur-[1px] opacity-50 grayscale-[20%]">
+                        <div className="absolute inset-0 bg-red-500/5 z-0 pointer-events-none mix-blend-multiply" />
 
-                            <div className="space-y-4">
-                                <div className="font-bold bg-zinc-800 w-1/4 h-6"></div>
-                                <div className="bg-zinc-800 w-full h-20"></div>
-                                <div className="bg-zinc-800 w-full h-20"></div>
-                            </div>
+                        {/* Chaos Header */}
+                        <div className="text-center border-b-2 border-black pb-4 mb-4">
+                            <h1 className="text-2xl font-bold uppercase tracking-widest text-black">Johnathan Doe</h1>
+                            <p className="text-[10px] mt-2">123 Street Address • Apt 4B • City, State 12345 • john.doe.super.long.email@provider.com • (555) 012-3456</p>
+                            <p className="text-[10px] italic mt-1 w-3/4 mx-auto">"Objective: Seeking a challenging position to utilize my skills in a growth-oriented company where I can add value"</p>
+                        </div>
 
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-8 border-red-500 text-red-500 font-black text-7xl uppercase p-8 -rotate-12 opacity-20">
-                                REJECTED
-                            </div>
+                        {/* Wall of Text */}
+                        <div className="columns-1 md:columns-2 gap-6 text-[9px] leading-tight text-justify space-y-4 opacity-70">
+                            {Array.from({ length: 15 }).map((_, i) => (
+                                <div key={i} className="mb-2">
+                                    <h4 className="font-bold underline mb-0.5">Role Description & Duties:</h4>
+                                    <p className="mb-1">
+                                        Responsible for synergistic alignment of cross-functional paradigms to leverage low-hanging fruit.
+                                        Proactively envisioned multimedia based expertise and cross-media growth strategies.
+                                        Seamlessly visualized quality intellectual capital without superior collaboration and idea-sharing.
+                                        Holistically pontificated installed base portals after maintainable products.
+                                    </p>
+                                    <p>
+                                        Phosfluorescently engaged worldwide methodologies with web-enabled technology.
+                                        Interactively coordinated proactive e-commerce via process-centric "outside the box" thinking.
+                                        Completely pursued scalable customer service through sustainable potentialities.
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Red Flags (Decorative) */}
+                        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 border-4 border-red-600/30 text-red-600/30 font-black text-4xl uppercase p-4 -rotate-12">
+                            CLUTTERED
+                        </div>
+                        <div className="absolute bottom-1/3 right-1/4 translate-x-1/2 translate-y-1/2 border-4 border-red-600/30 text-red-600/30 font-black text-4xl uppercase p-4 rotate-6">
+                            UNREADABLE
                         </div>
                     </div>
 
-                    {/* Image 2: Good Resume (Foreground - Revealed by Mask) */}
+
+                    {/* ------------------------------------------------------------ */}
+                    {/* LAYER 2: THE "GOOD" RESUME (Revealed via Mask)              */}
+                    {/* ------------------------------------------------------------ */}
                     <motion.div
-                        className="absolute inset-0 bg-white z-20 overflow-hidden"
+                        ref={maskedRef}
+                        className="absolute inset-0 bg-zinc-200 z-20 overflow-hidden" // Slight off-white background for paper feel
                         style={{
-                            maskImage: "radial-gradient(circle 150px at var(--x, 50%) var(--y, 50%), black 100%, transparent 100%)",
-                            WebkitMaskImage: "radial-gradient(circle 150px at var(--x, 50%) var(--y, 50%), black 100%, transparent 100%)",
+                            maskImage: "radial-gradient(circle 220px at var(--x, 50%) var(--y, 50%), black 100%, transparent 100%)",
+                            WebkitMaskImage: "radial-gradient(circle 220px at var(--x, 50%) var(--y, 50%), black 100%, transparent 100%)",
                         }}
                     >
-                        {/* We use a motion component to bind the CSS variables for the mask */}
-                        <MaskUpdateListener x={lensX} y={lensY} />
+                        {/* Content Container - WHITE PAPER LOOK */}
+                        <div className="absolute inset-0 bg-white p-8 md:p-12 font-sans text-slate-800 shadow-inner">
 
-                        <div className="absolute inset-0 bg-zinc-950 p-12 font-sans text-zinc-300 max-w-3xl mx-auto">
-                            {/* Header */}
-                            <div className="flex justify-between items-start border-b border-zinc-800 pb-6 mb-8">
+                            {/* Paper Grain/Texture (Subtle) */}
+                            <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/subtle-white-feathers.png')] pointer-events-none" />
+
+                            {/* Header - Clean, Minimal */}
+                            <div className="border-b border-slate-200 pb-6 mb-8 flex justify-between items-start">
                                 <div>
-                                    <h1 className="text-4xl font-bold text-white tracking-tight uppercase">ALEX MERCER</h1>
-                                    <div className="text-sm font-bold text-emerald-400 uppercase tracking-widest mt-2">Senior Operations Manager</div>
+                                    <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-2">John Doe</h1>
+                                    <p className="text-lg font-medium text-slate-600">Senior Full Stack Engineer</p>
                                 </div>
-                                <div className="text-right text-xs text-zinc-500">
-                                    alex.mercer@professional.com • (555) 987-6543<br />
-                                    New York, NY • linkedin.com/in/alexmercer
+                                <div className="text-right text-xs text-slate-500 space-y-1">
+                                    <p>San Francisco, CA</p>
+                                    <p>john@example.com</p>
+                                    <p>(555) 123-4567</p>
+                                    <p className="text-indigo-600 font-medium">github.com/johndoe</p>
                                 </div>
                             </div>
 
-                            {/* Content */}
-                            <div className="space-y-8">
+                            {/* Professional Summary */}
+                            <div className="mb-8">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 border-b border-slate-100 pb-1">Professional Summary</h3>
+                                <p className="text-sm text-slate-700 leading-relaxed">
+                                    Results-oriented software architect with 7+ years of experience building high-scale distributed systems.
+                                    Proven track record of optimization, reducing infrastructure costs by <span className="font-bold text-slate-900">40%</span> while serving <span className="font-bold text-slate-900">5M+</span> daily users.
+                                    Expert in React, Node.js, and Cloud Infrastructure.
+                                </p>
+                            </div>
+
+                            {/* Experience Section */}
+                            <div className="mb-8 space-y-6">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 border-b border-slate-100 pb-1">Experience</h3>
+
+                                {/* Role 1 */}
                                 <div>
-                                    <h3 className="text-xs font-bold uppercase text-zinc-500 tracking-widest mb-4 flex items-center gap-2">
-                                        <span className="w-1 h-4 bg-emerald-500 rounded-full"></span> Professional Experience
-                                    </h3>
-
-                                    <div className="mb-6 group/item relative">
-                                        <div className="flex justify-between font-bold text-white text-sm mb-1">
-                                            <span>Logistics Shift Supervisor</span>
-                                            <div className="text-zinc-500 text-xs">2021 - Present</div>
-                                        </div>
-                                        <div className="text-xs font-bold text-emerald-400 uppercase mb-2">Global Logistics Partners</div>
-                                        <ul className="text-xs list-disc ml-4 space-y-2 text-zinc-400 leading-relaxed">
-                                            <li>
-                                                <span className="text-white font-medium">Spearheaded</span> a warehouse reorganization project that increased daily throughput by <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-0 h-5 px-1.5 mx-1">25%</Badge> within 3 months, reducing overhead costs.
-                                            </li>
-                                            <li>
-                                                <span className="text-white font-medium">Orchestrated</span> a cross-functional team of 15 associates, achieving the highest regional safety rating for 2 consecutive years through rigorous training protocols.
-                                            </li>
-                                        </ul>
+                                    <div className="flex justify-between items-baseline mb-1">
+                                        <h4 className="font-bold text-slate-900">Senior Tech Lead</h4>
+                                        <span className="text-xs font-mono text-slate-500">2023 - Present</span>
                                     </div>
-
-                                    <div className="mb-6">
-                                        <div className="flex justify-between font-bold text-white text-sm mb-1">
-                                            <span>Operations Associate</span>
-                                            <div className="text-zinc-500 text-xs">2019 - 2021</div>
-                                        </div>
-                                        <div className="text-xs font-bold text-emerald-400 uppercase mb-2">Walmart Supply Chain</div>
-                                        <ul className="text-xs list-disc ml-4 space-y-2 text-zinc-400 leading-relaxed">
-                                            <li>
-                                                Optimized inventory tracking using SAP ERP systems, reducing discrepancy rates by <span className="text-white font-medium">15%</span>.
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    <div className="text-sm font-medium text-indigo-600 mb-2">TechFlow Systems</div>
+                                    <ul className="list-disc list-outside ml-4 space-y-1.5 text-xs text-slate-700">
+                                        <li>Architected micro-frontend migration, increasing deployment velocity by <span className="font-bold">300%</span>.</li>
+                                        <li>Led a team of 8 engineers to deliver a critical payments overhaul, processing <span className="font-bold">$50M+</span> annually.</li>
+                                        <li>Implemented automated testing pipeline, reducing bug reports by <span className="font-bold">65%</span> in Q4.</li>
+                                    </ul>
                                 </div>
 
+                                {/* Role 2 */}
                                 <div>
-                                    <h3 className="text-xs font-bold uppercase text-zinc-500 tracking-widest mb-4 flex items-center gap-2">
-                                        <span className="w-1 h-4 bg-emerald-500 rounded-full"></span> Core Competencies
-                                    </h3>
+                                    <div className="flex justify-between items-baseline mb-1">
+                                        <h4 className="font-bold text-slate-900">Senior Frontend Developer</h4>
+                                        <span className="text-xs font-mono text-slate-500">2020 - 2023</span>
+                                    </div>
+                                    <div className="text-sm font-medium text-indigo-600 mb-2">DataViz Corp</div>
+                                    <ul className="list-disc list-outside ml-4 space-y-1.5 text-xs text-slate-700">
+                                        <li>Optimized dashboard performance, boosting frame rates from 24fps to <span className="font-bold">60fps</span>.</li>
+                                        <li>Developed shared component library used across 12 product lines.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Skills Grid */}
+                            <div className="grid grid-cols-2 gap-8">
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1">Technical Skills</h3>
                                     <div className="flex flex-wrap gap-2">
-                                        {['Supply Chain Management', 'SAP ERP', 'Team Leadership', 'Lean Six Sigma', 'Data Analysis', 'Conflict Resolution', 'Inventory Control'].map(s => (
-                                            <span key={s} className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-3 py-1.5 rounded-md text-[11px] font-medium hover:border-emerald-500/50 hover:text-emerald-400 transition-colors cursor-default">{s}</span>
+                                        {['React', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'AWS', 'Docker', 'GraphQL'].map(skill => (
+                                            <span key={skill} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-[10px] font-medium border border-slate-200">
+                                                {skill}
+                                            </span>
                                         ))}
                                     </div>
                                 </div>
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1">Education</h3>
+                                    <div>
+                                        <div className="font-bold text-slate-900 text-xs">BS Computer Science</div>
+                                        <div className="text-slate-500 text-[10px]">University of California, Berkeley</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Floating "Hire Me" Badge - Subtle now */}
+                            <div className="absolute top-12 right-12 mix-blend-multiply opacity-10 rotate-12 pointer-events-none">
+                                <div className="border-4 border-emerald-600 text-emerald-600 font-black text-6xl uppercase p-4 rounded-lg">
+                                    HIRED
+                                </div>
                             </div>
                         </div>
-
-                        {/* Flashlight Ring */}
-                        <div className="absolute inset-0 pointer-events-none border-2 border-emerald-500/30 rounded-full w-[300px] h-[300px] -translate-x-1/2 -translate-y-1/2 shadow-[0_0_40px_rgba(16,185,129,0.3)] bg-emerald-500/5 backdrop-brightness-125"
-                            style={{
-                                left: "var(--x)",
-                                top: "var(--y)"
-                            }}
-                        />
                     </motion.div>
 
-                    {/* Fallback Instruction if not hovering */}
-                    {!isHovering && (
-                        <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
-                            <div className="flex flex-col items-center gap-3 animate-bounce opacity-50">
-                                <MousePointer2 className="w-8 h-8 text-white" />
-                                <span className="text-sm font-medium text-white bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">Hover to Reveal</span>
+                    {/* ------------------------------------------------------------ */}
+                    {/* LAYER 3: THE LENS (Glass/Ring/Scanner Overlay)               */}
+                    {/* ------------------------------------------------------------ */}
+                    <motion.div
+                        className="absolute w-[440px] h-[440px] rounded-full pointer-events-none z-30"
+                        style={{
+                            x: lensX,
+                            y: lensY,
+                            left: -220,
+                            top: -220,
+                        }}
+                    >
+                        {/* Glass Reflection - Darker/Sharper for contrast against white */}
+                        <div className="absolute inset-0 rounded-full border-[1px] border-indigo-500/20 shadow-[0_0_80px_rgba(0,0,0,0.2),inset_0_0_40px_rgba(255,255,255,0.2)] backdrop-brightness-105" />
+
+                        {/* Subtle Glint */}
+                        <div className="absolute top-10 right-10 w-20 h-20 bg-white/30 rounded-full blur-2xl opacity-40" />
+
+                        {/* Crosshairs - Darker for visibility */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 opacity-30">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1px] h-full bg-indigo-900" />
+                            <div className="absolute top-1/2 left-0 -translate-y-1/2 w-full h-[1px] bg-indigo-900" />
+                        </div>
+                    </motion.div>
+
+
+                    {/* ------------------------------------------------------------ */}
+                    {/* LAYER 4: FALLBACK / INSTRUCTIONS                             */}
+                    {/* ------------------------------------------------------------ */}
+                    {!isHovering && !isMobile && (
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-opacity duration-300">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-black/80 text-white rounded-full border border-white/10 backdrop-blur-md shadow-xl">
+                                <MousePointer2 className="w-4 h-4 animate-bounce" />
+                                <span className="text-xs font-medium uppercase tracking-wide">Hover to Reveal Quality</span>
                             </div>
                         </div>
                     )}
-
                 </div>
             </div>
+
+            <style jsx global>{`
+                @keyframes scan-fast {
+                    0% { transform: translateY(-50%); }
+                    100% { transform: translateY(0%); }
+                }
+                .animate-scan-fast {
+                    animation: scan-fast 1.5s linear infinite;
+                }
+            `}</style>
         </section>
     );
 };
-
-// Helper component to update CSS variables from Framer Motion values
-const MaskUpdateListener = ({ x, y }: { x: any, y: any }) => {
-    return (
-        <motion.div
-            style={{ x, y }}
-            className="hidden"
-            onUpdate={(latest) => {
-                // We find the parent container that needs the variables. 
-                // Since this component is inside the masked motion div, we target the closest relative container or global if needed.
-                // However, CSS variables cascade. So we can update them on a higher level container if we can reach it, 
-                // OR we can update the specific element by ID or class.
-                const els = document.querySelectorAll(".bg-white.z-20");
-                els.forEach((el) => {
-                    (el as HTMLElement).style.setProperty("--x", `${latest.x}px`);
-                    (el as HTMLElement).style.setProperty("--y", `${latest.y}px`);
-                });
-            }}
-        />
-    )
-}
