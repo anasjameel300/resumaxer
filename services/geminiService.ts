@@ -2,7 +2,7 @@ import { AtsAnalysis, ResumeData, WizardInitialData, CareerRoadmapResponse } fro
 
 // Helper function for API calls
 const postToAi = async (endpoint: string, body: any) => {
-  const response = await fetch(\`/api/ai/\${endpoint}\`, {
+  const response = await fetch(`/api/ai/${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -10,7 +10,7 @@ const postToAi = async (endpoint: string, body: any) => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || \`Failed to call \${endpoint}\`);
+    throw new Error(errorData.error || `Failed to call ${endpoint}`);
   }
 
   return response.json();
@@ -25,11 +25,11 @@ export const parseRawResumeData = async (resumeText: string): Promise<WizardInit
 };
 
 export const tailorResume = async (currentResume: ResumeData, jobDescription: string): Promise<string> => {
-   const result = await postToAi('tailor-resume', { 
-       currentResume: JSON.stringify(currentResume, null, 2), 
-       jobDescription 
-   });
-   return result.tailoredContent;
+  const result = await postToAi('tailor-resume', {
+    currentResume: JSON.stringify(currentResume, null, 2),
+    jobDescription
+  });
+  return result.tailoredContent;
 };
 
 export const generateClarificationQuestions = async (inputs: ResumeData): Promise<string[]> => {
@@ -37,17 +37,17 @@ export const generateClarificationQuestions = async (inputs: ResumeData): Promis
 };
 
 export const generateFullResume = async (inputs: any, clarificationAnswers?: any): Promise<any> => {
-    const result = await postToAi('generate-resume', { resumeData: inputs, clarificationAnswers });
-    return result.resume;
+  const result = await postToAi('generate-resume', { resumeData: inputs, clarificationAnswers });
+  return result.resume;
 }
 
 export const optimizeResumeContent = async (currentResume: string, jobDescription: string): Promise<string> => {
-     // Re-using tailor endpoint for content optimization
-     const result = await postToAi('tailor-resume', { 
-        currentResume, 
-        jobDescription 
-    });
-    return result.tailoredContent;
+  // Re-using tailor endpoint for content optimization
+  const result = await postToAi('tailor-resume', {
+    currentResume,
+    jobDescription
+  });
+  return result.tailoredContent;
 };
 
 export const roastMyResume = async (resumeText: string, persona: string = 'hr'): Promise<string> => {
@@ -56,8 +56,8 @@ export const roastMyResume = async (resumeText: string, persona: string = 'hr'):
 };
 
 export const generateResumeSummary = async (data: Partial<ResumeData>, targetRole: string): Promise<string> => {
-   const result = await postToAi('summary', { resumeData: data, targetRole });
-   return result.summary;
+  const result = await postToAi('summary', { resumeData: data, targetRole });
+  return result.summary;
 };
 
 export const generateCareerRoadmap = async (data: ResumeData, targetRole: string): Promise<CareerRoadmapResponse | null> => {
