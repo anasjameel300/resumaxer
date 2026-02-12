@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import { Inter, Syne } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const syne = Syne({ subsets: ["latin"], variable: "--font-syne" });
 
 export const metadata: Metadata = {
     title: "Resumaxer - AI Career Suite",
@@ -12,15 +16,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
-            <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-                <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet" />
-                {/* PDF.js Worker Configuration - handled in components or globally if needed, strictly speaking Next.js handles scripts better via next/script but specific worker config might need client side effect */}
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" async></script>
-            </head>
-            <body className="bg-surface-50 text-surface-900 antialiased selection:bg-primary-100 selection:text-primary-900">
+        <html lang="en" className="dark">
+            <body className={`${inter.variable} ${syne.variable} font-sans bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary-foreground`}>
                 {children}
             </body>
         </html>
