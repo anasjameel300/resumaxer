@@ -34,19 +34,8 @@ export const Hero = ({ onStart }: { onStart: () => void }) => {
 
                     {/* LEFT COLUMN: Content */}
                     <div className="text-center lg:text-left space-y-8">
-                        {/* Badge */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-300 backdrop-blur-sm"
-                        >
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                            </span>
-                            v2.0 Now Live
-                        </motion.div>
+                        {/* Badge Removed as per feedback */}
+                        <div className="h-4"></div>
 
                         {/* Headline */}
                         <div className="space-y-4">
@@ -56,7 +45,7 @@ export const Hero = ({ onStart }: { onStart: () => void }) => {
                                 transition={{ duration: 0.5, delay: 0.1 }}
                                 className="text-5xl md:text-6xl lg:text-7xl font-heading font-black tracking-tighter text-white leading-[1.05]"
                             >
-                                Cheat the <br className="hidden lg:block" />
+                                Outsmart the <br className="hidden lg:block" />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 animate-gradient-x">
                                     Algorithms.
                                 </span> <br />
@@ -69,8 +58,7 @@ export const Hero = ({ onStart }: { onStart: () => void }) => {
                                 transition={{ duration: 0.5, delay: 0.2 }}
                                 className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed"
                             >
-                                The only AI resume builder engineered to bypass 99% of ATS filters.
-                                We optimize your keywords, structure, and formatting to land you the interview.
+                                Stop sending your resume into the void. We help you structure, format, and optimize your application to ensure it gets read by a human.
                             </motion.p>
                         </div>
 
@@ -113,7 +101,7 @@ export const Hero = ({ onStart }: { onStart: () => void }) => {
                         >
                             <div className="flex items-center gap-2">
                                 <ShieldCheck className="w-4 h-4 text-emerald-500/80" />
-                                <span>ATS Certified</span>
+                                <span>ATS-Friendly</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Zap className="w-4 h-4 text-yellow-500/80" />
@@ -121,7 +109,7 @@ export const Hero = ({ onStart }: { onStart: () => void }) => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="flex h-2 w-2 rounded-full bg-green-500"></span>
-                                <span>24k+ Resumes Optimized</span>
+                                <span>Smart Optimization</span>
                             </div>
                         </motion.div>
                     </div>
@@ -206,11 +194,30 @@ export const Hero = ({ onStart }: { onStart: () => void }) => {
                 {/* Live Scan Ticker */}
                 <div className="mt-20 border-y border-white/5 bg-black/20 backdrop-blur-sm overflow-hidden py-4">
                     <div className="flex items-center gap-12 animate-marquee whitespace-nowrap opacity-50">
-                        {[...Array(10)].map((_, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm font-mono text-muted-foreground">
-                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                SCANNING RESUME #{Math.floor(Math.random() * 9000) + 1000}...
-                            </div>
+                        {/* Duplicate content to create seamless loop */}
+                        {[...Array(2)].map((_, groupIndex) => (
+                            <React.Fragment key={groupIndex}>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                                    <span className="text-sm font-mono text-muted-foreground">REAL-TIME CONTENT ANALYSIS</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                                    <span className="text-sm font-mono text-muted-foreground">KEYWORD MATCHING</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                    <span className="text-sm font-mono text-muted-foreground">ATS COMPLIANCE CHECK</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                    <span className="text-sm font-mono text-muted-foreground">PDF GENERATION</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
+                                    <span className="text-sm font-mono text-muted-foreground">GRAMMAR OPTIMIZATION</span>
+                                </div>
+                            </React.Fragment>
                         ))}
                     </div>
                 </div>
