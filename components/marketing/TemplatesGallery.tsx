@@ -66,20 +66,20 @@ const TEMPLATES_ROW_2: { id: TemplateId; name: string }[] = [
 const TemplateCard = ({ template }: { template: { id: TemplateId; name: string } }) => {
     return (
         <div className="relative group cursor-pointer">
-            {/* Card Container */}
-            <div className="w-[280px] h-[400px] bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden relative transition-transform duration-300 group-hover:scale-105 group-hover:shadow-xl">
+            {/* Card Container - Keep white to represent paper */}
+            <div className="w-[280px] h-[400px] bg-white rounded-xl shadow-2xl border border-white/10 overflow-hidden relative transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]">
 
                 {/* Scaled Resume Preview */}
                 <div className="absolute top-0 left-0 w-[210mm] min-h-[297mm] origin-top-left transform scale-[0.35] pointer-events-none select-none">
                     <ResumePreview data={SAMPLE_RESUME} template={template.id} />
                 </div>
 
-                {/* Overlay Gradient & content (unchanged) */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-                    <span className="text-white font-bold text-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                {/* Overlay Gradient & content */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                    <span className="text-white font-bold text-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
                         {template.name}
                     </span>
-                    <button className="mt-3 bg-white text-slate-900 text-xs font-bold py-2 px-4 rounded-full opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75 shadow-lg">
+                    <button className="mt-3 bg-white text-slate-900 text-xs font-bold py-2 px-4 rounded-full opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75 shadow-lg hover:bg-slate-100">
                         Use Template
                     </button>
                 </div>
@@ -90,9 +90,9 @@ const TemplateCard = ({ template }: { template: { id: TemplateId; name: string }
 
 const Marquee = ({ children, direction = "left", speed = 40, className }: { children: React.ReactNode, direction?: "left" | "right", speed?: number, className?: string }) => {
     return (
-        <div className={cn("flex overflow-hidden select-none gap-8 w-full", className)}>
+        <div className={cn("flex overflow-hidden select-none w-full", className)}>
             <motion.div
-                className="flex shrink-0 gap-8 min-w-full items-stretch"
+                className="flex shrink-0 gap-8 min-w-full items-stretch pr-8"
                 initial={{ x: direction === "left" ? 0 : "-100%" }}
                 animate={{ x: direction === "left" ? "-100%" : 0 }}
                 transition={{
@@ -104,7 +104,7 @@ const Marquee = ({ children, direction = "left", speed = 40, className }: { chil
                 {children}
             </motion.div>
             <motion.div
-                className="flex shrink-0 gap-8 min-w-full items-stretch"
+                className="flex shrink-0 gap-8 min-w-full items-stretch pr-8"
                 initial={{ x: direction === "left" ? 0 : "-100%" }}
                 animate={{ x: direction === "left" ? "-100%" : 0 }}
                 transition={{
@@ -122,18 +122,18 @@ const Marquee = ({ children, direction = "left", speed = 40, className }: { chil
 
 export const TemplatesGallery = () => {
     return (
-        <section className="py-24 bg-slate-50 relative overflow-hidden">
+        <section id="templates" className="py-24 bg-slate-950 relative overflow-hidden">
             {/* Background elements */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-slate-50 to-transparent z-10"></div>
-            <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-slate-50 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-slate-950 to-transparent z-10"></div>
+            <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-slate-950 to-transparent z-10"></div>
 
             <div className="container mx-auto px-4 mb-12 relative z-10">
                 <div className="text-center max-w-2xl mx-auto mb-16">
-                    <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">
-                        Professional Templates for <span className="text-indigo-600">Every Role</span>
+                    <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight font-heading">
+                        Professional Templates for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Every Role</span>
                     </h2>
-                    <p className="text-lg text-slate-600">
+                    <p className="text-lg text-slate-400 max-w-xl mx-auto">
                         Choose from our collection of ATS-optimized designs. From creative to executive, we have a style that fits your career.
                     </p>
                 </div>
@@ -156,8 +156,8 @@ export const TemplatesGallery = () => {
             </div>
 
             {/* Vignette for smooth edge fading */}
-            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none"></div>
-            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none"></div>
         </section>
     );
 };
