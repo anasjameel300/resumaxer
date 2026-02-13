@@ -27,7 +27,7 @@ export interface ResumeData {
   projects: ProjectItem[];
   education: EducationItem[];
   skills: string[];
-  achievements: string[]; 
+  achievements: string[];
   languages: LanguageItem[];
   themeColor?: string;
   font?: string;
@@ -41,10 +41,19 @@ export interface WizardInitialData {
     location: string;
     linkedin: string;
   };
+  userContext?: UserContext;
   experienceRaw: string;
   educationRaw: string;
   skillsRaw: string;
   analysisImprovements?: string[];
+}
+
+export interface UserContext {
+  identity: 'Student' | 'Professional' | 'Manager' | 'Executive';
+  experience: string; // e.g. "0-1 Years"
+  goal: 'Job' | 'Salary' | 'Remote' | 'CareerChange';
+  blocker: 'ATS' | 'Roadmap' | 'Design';
+  targetRole: string;
 }
 
 export interface ExperienceItem {

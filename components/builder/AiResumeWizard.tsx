@@ -112,7 +112,8 @@ const AiResumeWizard: React.FC<AiResumeWizardProps> = ({ onComplete, onCancel, i
 
         try {
             const inputs = {
-                strategy, jobDescription, predefinedRole, personalInfo, experienceRaw, educationRaw, skillsRaw, analysisImprovements
+                strategy, jobDescription, predefinedRole, personalInfo, experienceRaw, educationRaw, skillsRaw, analysisImprovements,
+                userContext: initialData?.userContext
             };
 
             const answersObject = clarificationQuestions.reduce((acc, q, i) => {

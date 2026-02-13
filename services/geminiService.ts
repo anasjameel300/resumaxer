@@ -32,7 +32,7 @@ export const tailorResume = async (currentResume: ResumeData, jobDescription: st
   return result.tailoredContent;
 };
 
-export const generateClarificationQuestions = async (inputs: ResumeData): Promise<string[]> => {
+export const generateClarificationQuestions = async (inputs: any): Promise<string[]> => {
   return postToAi('clarify', { resumeData: inputs });
 };
 

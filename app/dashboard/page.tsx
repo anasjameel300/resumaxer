@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AppView, ResumeData, WizardInitialData } from '@/types';
+import { AppView, ResumeData, WizardInitialData, UserContext } from '@/types';
 import ResumeBuilder from '@/components/builder/ResumeBuilder';
 import AtsScorer from '@/components/analysis/AtsScorer';
 import ResumeAnalysis from '@/components/analysis/ResumeAnalysis';
@@ -53,7 +53,13 @@ const DashboardPage: React.FC = () => {
             // Mock implementation until API is ready
             // const parsed = await parseRawResumeData(text);
             const parsed: WizardInitialData = {
-                personalInfo: { fullName: "User" },
+                personalInfo: {
+                    fullName: "User",
+                    email: "",
+                    phone: "",
+                    location: "",
+                    linkedin: ""
+                },
                 experienceRaw: "",
                 educationRaw: "",
                 skillsRaw: ""
@@ -100,11 +106,27 @@ ${data.achievements.join('\n')}
         setCurrentView(AppView.ATS_SCORER);
     };
 
-    const handleOnboardingComplete = (role: string, experience: string, targetRole: string) => {
+    const [userContext, setUserContext] = useState<UserContext | null>(null);
+
+    const handleOnboardingComplete = (context: UserContext) => {
+        setUserContext(context);
+
+        // Auto-fill summary based on context
         setResumeData(prev => ({
             ...prev,
-            summary: prev.summary || `Aspiring ${targetRole} with ${experience.replace(' Years', '')} years of experience as a ${role}...`
+            summary: prev.summary || `Aspiring ${context.targetRole} with ${context.experience.replace(' Years', '')} years of experience. Goal: ${context.goal}. Focus: ${context.blocker}.`
         }));
+
+        // Pass context to wizard data for the builder
+        setWizardInitialData(prev => ({
+            personalInfo: prev?.personalInfo || { fullName: resumeData.fullName, email: "", phone: "", location: "", linkedin: "" },
+            experienceRaw: prev?.experienceRaw || "",
+            educationRaw: prev?.educationRaw || "",
+            skillsRaw: prev?.skillsRaw || "",
+            userContext: context
+        }));
+
+
         setCurrentView(AppView.DASHBOARD);
     };
 
