@@ -246,9 +246,19 @@ export const ResumeComparison = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1">Education</h3>
-                                    <div>
-                                        <div className="font-bold text-slate-900 text-xs">BS Computer Science</div>
+                                    <div className="mb-2">
+                                        <div className="flex justify-between items-baseline">
+                                            <div className="font-bold text-slate-900 text-xs">BS Computer Science</div>
+                                            <div className="text-[10px] text-slate-500 font-mono">2016 - 2020</div>
+                                        </div>
                                         <div className="text-slate-500 text-[10px]">University of California, Berkeley</div>
+                                        <div className="mt-1 flex gap-2 text-[9px] text-slate-600">
+                                            <span className="font-semibold text-indigo-700 bg-indigo-50 px-1 rounded">GPA: 3.9/4.0</span>
+                                            <span className="italic">Magna Cum Laude</span>
+                                        </div>
+                                        <div className="mt-1 text-[9px] text-slate-500 leading-tight">
+                                            <span className="font-medium text-slate-600">Coursework:</span> Data Structures, Algorithms, Distributed Systems, AI
+                                        </div>
                                     </div>
                                 </div>
                             </div>

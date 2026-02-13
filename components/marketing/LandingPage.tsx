@@ -4,8 +4,9 @@ import React from 'react';
 import { Navbar } from './Navbar';
 import { Hero } from './Hero';
 import { ProblemSection } from './ProblemSection';
-import { ResumeComparison } from './ResumeComparison';
 import { BentoFeatures } from './BentoFeatures';
+import { ResumeComparison } from './ResumeComparison';
+import { TemplatesGallery } from './TemplatesGallery';
 import { Footer } from './Footer';
 import { Pricing } from './Pricing';
 
@@ -20,6 +21,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             <Hero onStart={onStart} />
             <ProblemSection />
             <BentoFeatures />
+            <TemplatesGallery />
             <ResumeComparison />
             <Pricing />
             <Footer />

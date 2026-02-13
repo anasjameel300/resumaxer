@@ -11,3 +11,7 @@
 - [ ] **Data Enrichment**: Integrate with a salary data API (e.g., Levels.fyi or Glassdoor) to show real "Salary Potential" for next steps.
 - [ ] **Detailed Guides**: Add a "How to get there" drawer for each roadmap step.
     - Content: "To move from Senior Engineer to Lead, you need to master System Design. Recommended Book: DDIA."
+
+## 🎨 Template Expansion & Realism
+- [ ] **Library Growth**: Expand template library to 20+ designs (currently ~9).
+- [ ] **Landing Page Fidelity**: Replace placeholder abstract SVG "templates" in `TemplatesGallery` with screenshots of actual, rendered resumes from the app.
