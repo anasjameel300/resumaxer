@@ -16,5 +16,6 @@
 - [ ] **Library Growth**: Expand template library to 20+ designs (currently ~9).
 - [ ] **Landing Page Fidelity**: Replace placeholder abstract SVG "templates" in `TemplatesGallery` with screenshots of actual, rendered resumes from the app.
 
-## linked page optmizer 
+## linked page optmizer, maybe github too
+
 
