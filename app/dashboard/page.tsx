@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppView, ResumeData, WizardInitialData, UserContext } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 import ResumeBuilder from '@/components/builder/ResumeBuilder';
 import AtsScorer from '@/components/analysis/AtsScorer';
 import ResumeAnalysis from '@/components/analysis/ResumeAnalysis';
@@ -16,15 +18,18 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
-import { FileText, ClipboardList, BarChart, Wand2, Key, LayoutTemplate, TrendingUp } from 'lucide-react';
+import { FileText, ClipboardList, BarChart, Wand2, Key, LayoutTemplate, TrendingUp, Loader2 } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
-    // Start at ONBOARDING for new users, or DASHBOARD if we had persistence
-    const [currentView, setCurrentView] = useState<AppView>(AppView.ONBOARDING);
+    const { user, loading: authLoading, signOut } = useAuth();
+    const supabase = createClient();
+
+    const [currentView, setCurrentView] = useState<AppView | null>(null); // null = loading
     const [wizardInitialData, setWizardInitialData] = useState<WizardInitialData | null>(null);
     const [scoreCheckText, setScoreCheckText] = useState<string>('');
+    const [userContext, setUserContext] = useState<UserContext | null>(null);
 
-    // Lifted state to share between Builder and Tailor - Now using useHistory
+    // Lifted state to share between Builder and Tailor - Using useHistory
     const [resumeData, setResumeData, undo, redo, canUndo, canRedo] = useHistory<ResumeData>({
         fullName: '',
         email: '',
@@ -48,10 +53,104 @@ const DashboardPage: React.FC = () => {
         font: 'sans'
     });
 
+    // ─── Load onboarding data from Supabase on mount ───
+    useEffect(() => {
+        if (authLoading || !user) return;
+
+        const loadOnboardingData = async () => {
+            const { data, error } = await supabase
+                .from('user_onboarding')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+            if (data && !error) {
+                // User has completed onboarding before
+                const context: UserContext = {
+                    identity: data.identity as UserContext['identity'],
+                    experience: data.experience,
+                    goal: data.goal as UserContext['goal'],
+                    blocker: data.blocker as UserContext['blocker'],
+                    targetRole: data.target_role,
+                    skills: data.skills || [],
+                };
+                setUserContext(context);
+                setCurrentView(AppView.DASHBOARD);
+            } else {
+                // New user — show onboarding
+                setCurrentView(AppView.ONBOARDING);
+            }
+        };
+
+        // Also load profile data into resumeData
+        const loadProfile = async () => {
+            const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (data) {
+                setResumeData(prev => ({
+                    ...prev,
+                    fullName: data.full_name || prev.fullName,
+                    email: data.email || prev.email,
+                    phone: data.phone || prev.phone,
+                    location: data.location || prev.location,
+                    targetRole: data.target_role || prev.targetRole,
+                }));
+            }
+        };
+
+        loadOnboardingData();
+        loadProfile();
+    }, [user, authLoading]);
+
+    // ─── Save onboarding data to Supabase ───
+    const handleOnboardingComplete = async (context: UserContext) => {
+        setUserContext(context);
+
+        // Persist to Supabase
+        if (user) {
+            await supabase.from('user_onboarding').upsert({
+                user_id: user.id,
+                identity: context.identity,
+                experience: context.experience,
+                goal: context.goal,
+                blocker: context.blocker,
+                target_role: context.targetRole,
+                skills: context.skills || [],
+                updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id' });
+
+            // Also update profile with target role
+            await supabase.from('profiles').update({
+                target_role: context.targetRole,
+                updated_at: new Date().toISOString(),
+            }).eq('id', user.id);
+        }
+
+        // Auto-fill summary based on context
+        setResumeData(prev => ({
+            ...prev,
+            summary: prev.summary || `Aspiring ${context.targetRole} with ${context.experience.replace(' Years', '')} years of experience. Goal: ${context.goal}. Focus: ${context.blocker}.`,
+            skills: context.skills?.length ? context.skills : prev.skills,
+        }));
+
+        // Pass context to wizard data for the builder
+        setWizardInitialData(prev => ({
+            personalInfo: prev?.personalInfo || { fullName: resumeData?.fullName || '', email: "", phone: "", location: "", linkedin: "" },
+            experienceRaw: prev?.experienceRaw || "",
+            educationRaw: prev?.educationRaw || "",
+            skillsRaw: prev?.skillsRaw || "",
+            userContext: context
+        }));
+
+        setCurrentView(AppView.DASHBOARD);
+    };
+
     const handleImproveResume = async (text: string, improvements: string[]) => {
         try {
-            // Mock implementation until API is ready
-            // const parsed = await parseRawResumeData(text);
             const parsed: WizardInitialData = {
                 personalInfo: {
                     fullName: "User",
@@ -106,32 +205,19 @@ ${data.achievements.join('\n')}
         setCurrentView(AppView.ATS_SCORER);
     };
 
-    const [userContext, setUserContext] = useState<UserContext | null>(null);
+    // ─── Loading state ───
+    if (authLoading || currentView === null) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading your workspace...</p>
+                </div>
+            </div>
+        );
+    }
 
-    const handleOnboardingComplete = (context: UserContext) => {
-        setUserContext(context);
-
-        // Auto-fill summary based on context
-        setResumeData(prev => ({
-            ...prev,
-            summary: prev.summary || `Aspiring ${context.targetRole} with ${context.experience.replace(' Years', '')} years of experience. Goal: ${context.goal}. Focus: ${context.blocker}.`,
-            skills: context.skills?.length ? context.skills : prev.skills,
-        }));
-
-        // Pass context to wizard data for the builder
-        setWizardInitialData(prev => ({
-            personalInfo: prev?.personalInfo || { fullName: resumeData.fullName, email: "", phone: "", location: "", linkedin: "" },
-            experienceRaw: prev?.experienceRaw || "",
-            educationRaw: prev?.educationRaw || "",
-            skillsRaw: prev?.skillsRaw || "",
-            userContext: context
-        }));
-
-
-        setCurrentView(AppView.DASHBOARD);
-    };
-
-    // Logic for rendering views
+    // ─── Onboarding ───
     if (currentView === AppView.ONBOARDING) {
         return <OnboardingQuiz onComplete={handleOnboardingComplete} />;
     }
@@ -167,7 +253,7 @@ ${data.achievements.join('\n')}
                 return <JobTracker />;
             case AppView.DASHBOARD:
             default:
-                return <DashboardHome onViewChange={setCurrentView} />;
+                return <DashboardHome onViewChange={setCurrentView} userName={user?.user_metadata?.full_name || user?.user_metadata?.name || resumeData.fullName} />;
         }
     };
 
@@ -176,7 +262,7 @@ ${data.achievements.join('\n')}
             <Sidebar
                 currentView={currentView}
                 onViewChange={setCurrentView}
-                userData={{ fullName: resumeData.fullName }}
+                userData={{ fullName: user?.user_metadata?.full_name || user?.user_metadata?.name || resumeData.fullName, avatarUrl: user?.user_metadata?.avatar_url }}
             />
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
@@ -198,12 +284,12 @@ ${data.achievements.join('\n')}
     );
 };
 
-// Refactored Dashboard Home Sub-component
-const DashboardHome = ({ onViewChange }: { onViewChange: (view: AppView) => void }) => (
+// ─── Dashboard Home ───
+const DashboardHome = ({ onViewChange, userName }: { onViewChange: (view: AppView) => void; userName?: string }) => (
     <div className="max-w-6xl mx-auto space-y-12">
         <div>
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground tracking-tight mb-2">
-                Hello, Professional.
+                Hello, {userName || 'Professional'}.
             </h2>
             <p className="text-muted-foreground text-lg">Your career acceleration toolkit is ready.</p>
         </div>

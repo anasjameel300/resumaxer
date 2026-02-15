@@ -24,7 +24,7 @@ import { AppView } from "@/types"; // We need to ensure types are imported corre
 interface SidebarProps {
     currentView: any; // Using any for now to avoid enum import issues if path is wrong, but ideally AppView
     onViewChange: (view: any) => void;
-    userData: { fullName: string; email?: string };
+    userData: { fullName: string; email?: string; avatarUrl?: string };
 }
 
 export const Sidebar = ({ currentView, onViewChange, userData }: SidebarProps) => {
@@ -113,8 +113,12 @@ export const Sidebar = ({ currentView, onViewChange, userData }: SidebarProps) =
                         currentView === "PROFILE" && "ring-1 ring-primary/50 bg-primary/5"
                     )}
                 >
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-zinc-700 to-zinc-600 flex items-center justify-center font-bold text-white text-xs border border-white/10 group-hover:from-indigo-500 group-hover:to-purple-600 transition-all">
-                        {userData.fullName ? userData.fullName.charAt(0).toUpperCase() : 'G'}
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-zinc-700 to-zinc-600 flex items-center justify-center font-bold text-white text-xs border border-white/10 group-hover:from-indigo-500 group-hover:to-purple-600 transition-all overflow-hidden">
+                        {userData.avatarUrl ? (
+                            <img src={userData.avatarUrl} alt={userData.fullName || 'Profile'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                            userData.fullName ? userData.fullName.charAt(0).toUpperCase() : 'G'
+                        )}
                     </div>
                     <div className="hidden md:block text-left overflow-hidden">
                         <div className="text-sm font-medium text-zinc-200 truncate">{userData.fullName || 'Guest User'}</div>

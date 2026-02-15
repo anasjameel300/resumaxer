@@ -376,7 +376,7 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
                                                     className={cn(
                                                         "cursor-pointer rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative aspect-[210/297] box-content",
                                                         selectedTemplate === t.id
-                                                            ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-zinc-950"
+                                                            ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-zinc-950 shadow-[0_0_20px_-5px_var(--primary)]"
                                                             : "border-zinc-800 hover:border-zinc-500"
                                                     )}
                                                 >
@@ -387,21 +387,26 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
                                                         </div>
                                                     </div>
 
-                                                    {/* Hover Overlay */}
-                                                    <div className={cn(
-                                                        "absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10",
-                                                        selectedTemplate === t.id && "bg-primary/20 opacity-100"
-                                                    )}>
-                                                        {selectedTemplate === t.id && (
-                                                            <div className="bg-primary text-white rounded-full p-2 shadow-lg scale-110">
-                                                                <CheckCircle2 className="w-6 h-6" />
+                                                    {/* Selection Overlay — always visible when selected */}
+                                                    {selectedTemplate === t.id && (
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/40 via-indigo-500/15 to-transparent z-10 flex items-center justify-center">
+                                                            <div className="bg-primary text-white rounded-full p-2.5 shadow-xl shadow-primary/30">
+                                                                <CheckCircle2 className="w-7 h-7" />
                                                             </div>
-                                                        )}
-                                                    </div>
+                                                        </div>
+                                                    )}
 
                                                     {/* Footer Label */}
-                                                    <div className="absolute inset-x-0 bottom-0 p-3 bg-zinc-950/90 border-t border-white/10 backdrop-blur-md z-20">
-                                                        <div className="font-bold text-xs text-center text-white truncate">{t.name}</div>
+                                                    <div className={cn(
+                                                        "absolute inset-x-0 bottom-0 p-3 border-t backdrop-blur-md z-20",
+                                                        selectedTemplate === t.id
+                                                            ? "bg-primary/90 border-primary/50"
+                                                            : "bg-zinc-950/90 border-white/10"
+                                                    )}>
+                                                        <div className="font-bold text-xs text-center text-white truncate">
+                                                            {selectedTemplate === t.id && <span className="mr-1">✓</span>}
+                                                            {t.name}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -708,10 +713,10 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
                     <div id="resume-preview-container" className="bg-white shadow-2xl w-[210mm] min-h-[297mm] h-fit p-0 origin-top transform transition-all duration-500 scale-[0.5] sm:scale-[0.6] md:scale-[0.7] xl:scale-[0.8] 2xl:scale-[0.85] overflow-visible mb-20 print:transform-none print:shadow-none print:mb-0">
                         <ResumePreview
                             data={
-                                // If we are in Design Mode (Step 0) AND the user hasn't entered a name yet, 
-                                // show the rich DUMMY_DATA so they can visualize the template.
-                                (currentStep === 0 && !data.fullName)
-                                    ? { ...DUMMY_DATA, themeColor: data.themeColor, font: data.font }
+                                // In Design step (Step 0), always show DUMMY_DATA
+                                // with the user's real name/email merged in
+                                currentStep === 0
+                                    ? { ...DUMMY_DATA, fullName: data.fullName || DUMMY_DATA.fullName, email: data.email || DUMMY_DATA.email, themeColor: data.themeColor, font: data.font }
                                     : data
                             }
                             template={selectedTemplate}

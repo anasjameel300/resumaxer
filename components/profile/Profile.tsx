@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ResumeData } from '../../types';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 import {
     User, Mail, Phone, MapPin, Globe, Linkedin, Github,
@@ -18,12 +20,25 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
+    const { user, signOut } = useAuth();
+    const supabase = createClient();
     const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = () => {
+    if (!data) return null;
+
+    const handleSave = async () => {
         setIsSaving(true);
-        // Simulate API call
-        setTimeout(() => setIsSaving(false), 1000);
+        if (user) {
+            await supabase.from('profiles').update({
+                full_name: data.fullName,
+                email: data.email,
+                phone: data.phone,
+                location: data.location,
+                target_role: data.targetRole,
+                updated_at: new Date().toISOString(),
+            }).eq('id', user.id);
+        }
+        setTimeout(() => setIsSaving(false), 600);
     };
 
     const updateField = (field: keyof ResumeData, value: string) => {
@@ -54,7 +69,18 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
                 <div className="absolute bottom-6 left-8 flex items-end gap-6">
                     <div className="relative">
                         <div className="w-24 h-24 rounded-2xl bg-zinc-900 border-4 border-zinc-950 shadow-2xl flex items-center justify-center text-3xl font-bold text-white relative overflow-hidden group/avatar cursor-pointer">
-                            {data.fullName ? data.fullName.charAt(0).toUpperCase() : <User className="w-10 h-10 text-zinc-600" />}
+                            {user?.user_metadata?.avatar_url ? (
+                                <img
+                                    src={user.user_metadata.avatar_url}
+                                    alt={data?.fullName || 'Profile'}
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                />
+                            ) : data?.fullName ? (
+                                data.fullName.charAt(0).toUpperCase()
+                            ) : (
+                                <User className="w-10 h-10 text-zinc-600" />
+                            )}
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                                 <Camera className="w-6 h-6 text-white" />
                             </div>
@@ -91,7 +117,7 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
                             ))}
                         </nav>
                         <div className="my-2 border-t border-white/5" />
-                        <button className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2 group">
+                        <button onClick={signOut} className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2 group">
                             <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                             Sign Out
                         </button>
