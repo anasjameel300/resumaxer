@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
-import { CheckCircle2, MousePointer2, ScanLine, Briefcase, GraduationCap, Code2, Globe } from "lucide-react";
+import { CheckCircle2, MousePointer2, ScanLine, Briefcase, GraduationCap, Code2, Globe, Linkedin, Github, ExternalLink, Award, ShieldCheck, TrendingUp } from "lucide-react";
 
 export const ResumeComparison = () => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -113,7 +113,7 @@ export const ResumeComparison = () => {
                     onTouchMove={handleMouseMove}
                     onMouseLeave={handleMouseLeave}
                     onTouchEnd={handleMouseLeave}
-                    className="w-full max-w-5xl mx-auto relative h-[600px] md:h-[800px] rounded-3xl border border-white/10 shadow-2xl overflow-hidden group select-none bg-zinc-950 cursor-crosshair transform transition-transform duration-500 hover:scale-[1.005]"
+                    className="w-full max-w-3xl mx-auto relative aspect-[210/297] rounded-3xl border border-white/10 shadow-2xl overflow-hidden group select-none bg-zinc-950 cursor-crosshair transform transition-transform duration-500 hover:scale-[1.005]"
                 >
 
                     {/* ------------------------------------------------------------ */}
@@ -171,102 +171,173 @@ export const ResumeComparison = () => {
                         }}
                     >
                         {/* Content Container - WHITE PAPER LOOK */}
-                        <div className="absolute inset-0 bg-white p-8 md:p-12 font-sans text-slate-800 shadow-inner">
+                        <div className="absolute inset-0 bg-white font-sans text-slate-800 shadow-inner flex">
 
                             {/* Paper Grain/Texture (Subtle) */}
                             <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/subtle-white-feathers.png')] pointer-events-none" />
 
-                            {/* Header - Clean, Minimal */}
-                            <div className="border-b border-slate-200 pb-6 mb-8 flex justify-between items-start">
-                                <div>
-                                    <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-2">John Doe</h1>
-                                    <p className="text-lg font-medium text-slate-600">Senior Full Stack Engineer</p>
-                                </div>
-                                <div className="text-right text-xs text-slate-500 space-y-1">
-                                    <p>San Francisco, CA</p>
-                                    <p>john@example.com</p>
-                                    <p>(555) 123-4567</p>
-                                    <p className="text-indigo-600 font-medium">github.com/johndoe</p>
-                                </div>
-                            </div>
+                            {/* Left Accent Bar */}
+                            <div className="w-1.5 bg-gradient-to-b from-indigo-500 via-indigo-600 to-purple-600 shrink-0" />
 
-                            {/* Professional Summary */}
-                            <div className="mb-8">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 border-b border-slate-100 pb-1">Professional Summary</h3>
-                                <p className="text-sm text-slate-700 leading-relaxed">
-                                    Results-oriented software architect with 7+ years of experience building high-scale distributed systems.
-                                    Proven track record of optimization, reducing infrastructure costs by <span className="font-bold text-slate-900">40%</span> while serving <span className="font-bold text-slate-900">5M+</span> daily users.
-                                    Expert in React, Node.js, and Cloud Infrastructure.
-                                </p>
-                            </div>
+                            {/* Main Content */}
+                            <div className="flex-1 p-5 md:p-7 overflow-hidden">
 
-                            {/* Experience Section */}
-                            <div className="mb-8 space-y-6">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 border-b border-slate-100 pb-1">Experience</h3>
-
-                                {/* Role 1 */}
-                                <div>
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <h4 className="font-bold text-slate-900">Senior Tech Lead</h4>
-                                        <span className="text-xs font-mono text-slate-500">2023 - Present</span>
+                                {/* Header */}
+                                <div className="border-b border-slate-200 pb-3 mb-4 flex justify-between items-start">
+                                    <div>
+                                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-0.5">John Doe</h1>
+                                        <p className="text-sm font-semibold text-indigo-600">Senior Full Stack Engineer</p>
+                                        <div className="flex items-center gap-3 mt-2.5">
+                                            <span className="flex items-center gap-1 text-[10px] text-slate-500"><Globe className="w-3 h-3" />San Francisco, CA</span>
+                                            <span className="flex items-center gap-1 text-[10px] text-indigo-600 font-medium"><Linkedin className="w-3 h-3" />linkedin.com/in/johndoe</span>
+                                            <span className="flex items-center gap-1 text-[10px] text-slate-600 font-medium"><Github className="w-3 h-3" />github.com/johndoe</span>
+                                            <span className="flex items-center gap-1 text-[10px] text-slate-600 font-medium"><ExternalLink className="w-3 h-3" />johndoe.dev</span>
+                                        </div>
                                     </div>
-                                    <div className="text-sm font-medium text-indigo-600 mb-2">TechFlow Systems</div>
-                                    <ul className="list-disc list-outside ml-4 space-y-1.5 text-xs text-slate-700">
-                                        <li>Architected micro-frontend migration, increasing deployment velocity by <span className="font-bold">300%</span>.</li>
-                                        <li>Led a team of 8 engineers to deliver a critical payments overhaul, processing <span className="font-bold">$50M+</span> annually.</li>
-                                        <li>Implemented automated testing pipeline, reducing bug reports by <span className="font-bold">65%</span> in Q4.</li>
-                                    </ul>
-                                </div>
-
-                                {/* Role 2 */}
-                                <div>
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <h4 className="font-bold text-slate-900">Senior Frontend Developer</h4>
-                                        <span className="text-xs font-mono text-slate-500">2020 - 2023</span>
-                                    </div>
-                                    <div className="text-sm font-medium text-indigo-600 mb-2">DataViz Corp</div>
-                                    <ul className="list-disc list-outside ml-4 space-y-1.5 text-xs text-slate-700">
-                                        <li>Optimized dashboard performance, boosting frame rates from 24fps to <span className="font-bold">60fps</span>.</li>
-                                        <li>Developed shared component library used across 12 product lines.</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            {/* Skills Grid */}
-                            <div className="grid grid-cols-2 gap-8">
-                                <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1">Technical Skills</h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['React', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'AWS', 'Docker', 'GraphQL'].map(skill => (
-                                            <span key={skill} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-[10px] font-medium border border-slate-200">
-                                                {skill}
-                                            </span>
-                                        ))}
+                                    <div className="text-right text-xs text-slate-500 space-y-0.5 shrink-0">
+                                        <p>john@example.com</p>
+                                        <p>(555) 123-4567</p>
                                     </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1">Education</h3>
-                                    <div className="mb-2">
+
+                                {/* Professional Summary */}
+                                <div className="mb-3">
+                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-indigo-600 mb-1">Professional Summary</h3>
+                                    <p className="text-[10px] text-slate-700 leading-relaxed">
+                                        Results-oriented software architect with <span className="font-bold text-slate-900">7+ years</span> building high-scale distributed systems serving <span className="font-bold text-slate-900">5M+ DAU</span>.
+                                        Reduced infrastructure costs by <span className="font-bold text-slate-900">40%</span> at TechFlow while leading a cross-functional team of 8.
+                                        Expert in React ecosystem, Node.js microservices, and AWS cloud architecture. Passionate about developer experience and system reliability.
+                                    </p>
+                                </div>
+
+                                {/* Projects Section - New addition to fill space */}
+                                <div className="mb-3 space-y-3">
+                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-indigo-600 mb-1">Key Projects</h3>
+
+                                    <div>
                                         <div className="flex justify-between items-baseline">
-                                            <div className="font-bold text-slate-900 text-xs">BS Computer Science</div>
-                                            <div className="text-[10px] text-slate-500 font-mono">2016 - 2020</div>
+                                            <h4 className="font-bold text-slate-900 text-xs">E-Commerce Platform Rebrand</h4>
+                                            <span className="text-[10px] font-semibold text-indigo-600">React, Node.js, Stripe</span>
                                         </div>
-                                        <div className="text-slate-500 text-[10px]">University of California, Berkeley</div>
-                                        <div className="mt-1 flex gap-2 text-[9px] text-slate-600">
-                                            <span className="font-semibold text-indigo-700 bg-indigo-50 px-1 rounded">GPA: 3.9/4.0</span>
-                                            <span className="italic">Magna Cum Laude</span>
+                                        <ul className="list-disc list-outside ml-4 space-y-0.5 text-[10px] text-slate-700 mt-0.5">
+                                            <li>Led frontend overhaul effectively increasing conversion rate by <span className="font-bold text-slate-900">15%</span> within 3 months post-launch.</li>
+                                            <li>Implemented secure payment gateway processing <span className="font-bold text-slate-900">$50k+</span> monthly transactions with 0% downtime.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between items-baseline">
+                                            <h4 className="font-bold text-slate-900 text-xs">Real-Time Analytics Dashboard</h4>
+                                            <span className="text-[10px] font-semibold text-indigo-600">Vue.js, Firebase, D3.js</span>
                                         </div>
-                                        <div className="mt-1 text-[9px] text-slate-500 leading-tight">
-                                            <span className="font-medium text-slate-600">Coursework:</span> Data Structures, Algorithms, Distributed Systems, AI
+                                        <ul className="list-disc list-outside ml-4 space-y-0.5 text-[10px] text-slate-700 mt-0.5">
+                                            <li>Built interactive data visualization tools used by <span className="font-bold text-slate-900">200+</span> internal stakeholders for daily reporting.</li>
+                                            <li>Optimized data fetching logic, reducing load times by <span className="font-bold text-slate-900">40%</span> for large datasets.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* Experience Section */}
+                                <div className="mb-3 space-y-3">
+                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-indigo-600 mb-1">Experience</h3>
+
+                                    {/* Role 1 */}
+                                    <div>
+                                        <div className="flex justify-between items-baseline">
+                                            <h4 className="font-bold text-slate-900 text-xs">Senior Tech Lead</h4>
+                                            <span className="text-[10px] font-mono text-slate-400">Jan 2023 — Present</span>
+                                        </div>
+                                        <div className="text-[10px] font-semibold text-indigo-600 mb-1">TechFlow Systems · San Francisco, CA</div>
+                                        <ul className="list-disc list-outside ml-4 space-y-0.5 text-[10px] text-slate-700">
+                                            <li>Architected micro-frontend migration serving <span className="font-bold text-slate-900">5M+ users</span>, increasing deployment velocity by <span className="font-bold text-slate-900">300%</span> and reducing release cycles from 2 weeks to 2 days.</li>
+                                            <li>Led a team of 8 engineers to deliver a payments overhaul processing <span className="font-bold text-slate-900">$12M+ annually</span>, achieving PCI-DSS compliance ahead of schedule.</li>
+                                            <li>Designed and implemented CI/CD pipeline with automated E2E testing, reducing production bug reports by <span className="font-bold text-slate-900">65%</span> and saving <span className="font-bold text-slate-900">$180K/year</span> in QA costs.</li>
+                                        </ul>
+                                    </div>
+
+                                    {/* Role 2 */}
+                                    <div>
+                                        <div className="flex justify-between items-baseline">
+                                            <h4 className="font-bold text-slate-900 text-xs">Senior Frontend Developer</h4>
+                                            <span className="text-[10px] font-mono text-slate-400">Mar 2020 — Dec 2022</span>
+                                        </div>
+                                        <div className="text-[10px] font-semibold text-indigo-600 mb-1">DataViz Corp · Remote</div>
+                                        <ul className="list-disc list-outside ml-4 space-y-0.5 text-[10px] text-slate-700">
+                                            <li>Optimized real-time dashboard rendering pipeline, boosting frame rates from 24fps to <span className="font-bold text-slate-900">60fps</span> and increasing user engagement by <span className="font-bold text-slate-900">22%</span>.</li>
+                                            <li>Built a shared component library adopted across <span className="font-bold text-slate-900">12 product lines</span>, reducing UI development time by <span className="font-bold text-slate-900">40%</span>.</li>
+                                            <li>Mentored 4 junior developers through structured code reviews, resulting in <span className="font-bold text-slate-900">100%</span> promotion rate within 18 months.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Grid: Skills + Education + Certs */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-3">
+                                        {/* Skills - Categorized */}
+                                        <div>
+                                            <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-indigo-600 mb-2">Technical Skills</h3>
+                                            <div className="space-y-2">
+                                                {[
+                                                    { category: 'Frontend', skills: ['React', 'Next.js', 'TypeScript', 'Tailwind'] },
+                                                    { category: 'Backend', skills: ['Node.js', 'PostgreSQL', 'GraphQL', 'Redis'] },
+                                                    { category: 'Cloud & DevOps', skills: ['AWS', 'Docker', 'K8s', 'Terraform'] },
+                                                ].map(group => (
+                                                    <div key={group.category}>
+                                                        <div className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mb-1">{group.category}</div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {group.skills.map(skill => (
+                                                                <span key={skill} className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[9px] font-semibold border border-indigo-100">
+                                                                    {skill}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Certifications */}
+                                        <div>
+                                            <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-indigo-600 mb-2">Certifications</h3>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-1.5 text-[10px] text-slate-700">
+                                                    <Award className="w-3 h-3 text-amber-500" />
+                                                    <span className="font-semibold">AWS Solutions Architect — Professional</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-[10px] text-slate-700">
+                                                    <Award className="w-3 h-3 text-amber-500" />
+                                                    <span className="font-semibold">Google Cloud Professional Data Engineer</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        {/* Education */}
+                                        <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-indigo-600 mb-2">Education</h3>
+                                        <div className="mb-3">
+                                            <div className="flex justify-between items-baseline">
+                                                <div className="font-bold text-slate-900 text-xs">BS Computer Science</div>
+                                                <div className="text-[10px] text-slate-400 font-mono">2016 — 2020</div>
+                                            </div>
+                                            <div className="text-slate-500 text-[10px]">University of California, Berkeley</div>
+                                            <div className="mt-1 flex gap-2 text-[9px] text-slate-600">
+                                                <span className="font-semibold text-indigo-700 bg-indigo-50 px-1 rounded">GPA: 3.9/4.0</span>
+                                                <span className="italic">Magna Cum Laude</span>
+                                            </div>
+                                            <div className="mt-1 text-[9px] text-slate-500 leading-tight">
+                                                <span className="font-medium text-slate-600">Relevant:</span> Distributed Systems, Machine Learning, Algorithms, Cloud Computing
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Floating "Hire Me" Badge - Subtle now */}
-                            <div className="absolute top-12 right-12 mix-blend-multiply opacity-10 rotate-12 pointer-events-none">
-                                <div className="border-4 border-emerald-600 text-emerald-600 font-black text-6xl uppercase p-4 rounded-lg">
-                                    HIRED
+                                {/* ATS Score Badge */}
+                                <div className="absolute top-6 right-6 pointer-events-none">
+                                    <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-full shadow-sm">
+                                        <ShieldCheck className="w-3.5 h-3.5" />
+                                        <span className="text-[10px] font-black tracking-wide">ATS Score: 96/100</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

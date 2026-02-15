@@ -114,7 +114,8 @@ ${data.achievements.join('\n')}
         // Auto-fill summary based on context
         setResumeData(prev => ({
             ...prev,
-            summary: prev.summary || `Aspiring ${context.targetRole} with ${context.experience.replace(' Years', '')} years of experience. Goal: ${context.goal}. Focus: ${context.blocker}.`
+            summary: prev.summary || `Aspiring ${context.targetRole} with ${context.experience.replace(' Years', '')} years of experience. Goal: ${context.goal}. Focus: ${context.blocker}.`,
+            skills: context.skills?.length ? context.skills : prev.skills,
         }));
 
         // Pass context to wizard data for the builder

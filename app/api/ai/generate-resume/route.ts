@@ -29,6 +29,11 @@ export async function POST(req: NextRequest) {
             if (userContext.identity === 'Student') contextInstructions.push("IDENTITY: STUDENT/GRAD. Focus on academic projects, internships, and rapid learning ability. Highlight potential over experience.");
             if (userContext.identity === 'Executive') contextInstructions.push("IDENTITY: EXECUTIVE. Focus on strategic vision, P&L responsibility, and organizational leadership. Use high-level language.");
 
+            // Skills-based instructions
+            if (userContext.skills?.length) {
+                contextInstructions.push(`SKILLS: The user has identified these as their core skills: ${userContext.skills.join(', ')}. Incorporate these prominently in the Skills section and weave them naturally into experience bullet points.`);
+            }
+
             systemPrompt += `\n\nSTRATEGIC INSTRUCTIONS:\n${contextInstructions.join('\n')}`;
         }
 

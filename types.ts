@@ -20,6 +20,7 @@ export interface ResumeData {
   email: string;
   phone: string;
   location?: string;
+  targetRole?: string;
   website?: string; // Kept for legacy support
   socialLinks: SocialLink[];
   summary: string;
@@ -54,6 +55,7 @@ export interface UserContext {
   goal: 'Job' | 'Salary' | 'Remote' | 'CareerChange';
   blocker: 'ATS' | 'Roadmap' | 'Design';
   targetRole: string;
+  skills?: string[];
 }
 
 export interface ExperienceItem {

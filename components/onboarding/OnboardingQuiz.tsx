@@ -2,25 +2,44 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ChevronLeft, Briefcase, GraduationCap, Zap, DollarSign, Globe, Repeat, AlertCircle, Map, Palette, Rocket, Check, Building2, UserCircle } from 'lucide-react';
+import { ArrowRight, ChevronLeft, Briefcase, GraduationCap, Zap, DollarSign, Globe, Repeat, AlertCircle, Map, Palette, Rocket, Check, Building2, UserCircle, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { UserContext } from '@/types';
 
+// --- Skill Data by Domain ---
+const SKILL_DOMAINS: Record<string, string[]> = {
+    'Frontend': ['React', 'Next.js', 'Vue.js', 'Angular', 'TypeScript', 'JavaScript', 'HTML/CSS', 'Tailwind CSS', 'Svelte', 'Redux', 'jQuery', 'Sass/SCSS', 'Webpack', 'Vite', 'Storybook'],
+    'Backend': ['Node.js', 'Python', 'Java', 'Go', 'Ruby', 'PHP', 'C#', '.NET', 'Express.js', 'Django', 'Flask', 'Spring Boot', 'FastAPI', 'REST APIs', 'GraphQL'],
+    'Data Science': ['Python', 'R', 'SQL', 'Pandas', 'NumPy', 'TensorFlow', 'PyTorch', 'Scikit-learn', 'Jupyter', 'Tableau', 'Power BI', 'Spark', 'Machine Learning', 'Deep Learning', 'NLP'],
+    'DevOps': ['Docker', 'Kubernetes', 'AWS', 'GCP', 'Azure', 'Terraform', 'Jenkins', 'CI/CD', 'Linux', 'Nginx', 'Ansible', 'Prometheus', 'Grafana', 'GitHub Actions', 'Helm'],
+    'Design': ['Figma', 'Sketch', 'Adobe XD', 'Photoshop', 'Illustrator', 'After Effects', 'InVision', 'Framer', 'UI Design', 'UX Research', 'Wireframing', 'Prototyping', 'Design Systems', 'Accessibility', 'Motion Design'],
+    'Mobile': ['React Native', 'Flutter', 'Swift', 'Kotlin', 'iOS', 'Android', 'Expo', 'Dart', 'Objective-C', 'Xamarin', 'Ionic', 'SwiftUI', 'Jetpack Compose', 'App Store', 'Firebase'],
+    'Marketing': ['SEO', 'Google Ads', 'Meta Ads', 'Content Strategy', 'Copywriting', 'Email Marketing', 'Analytics', 'A/B Testing', 'Social Media', 'HubSpot', 'Mailchimp', 'Branding', 'Growth Hacking', 'CRO', 'PPC'],
+    'Management': ['Agile', 'Scrum', 'Jira', 'Confluence', 'Roadmapping', 'Stakeholder Management', 'OKRs', 'Budgeting', 'Hiring', 'Mentoring', 'Cross-functional Leadership', 'Strategic Planning', 'Risk Management', 'Product Management', 'Team Building'],
+};
+
 interface OnboardingQuizProps {
     onComplete: (context: UserContext) => void;
 }
 
+const TOTAL_STEPS = 6;
+
 const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
     const [step, setStep] = useState(0);
     const [context, setContext] = useState<Partial<UserContext>>({
-        targetRole: ''
+        targetRole: '',
+        skills: [],
     });
 
+    // Skills step state
+    const [activeDomain, setActiveDomain] = useState<string>(Object.keys(SKILL_DOMAINS)[0]);
+    const [customSkillInput, setCustomSkillInput] = useState('');
+
     const handleNext = () => {
-        if (step === 4) {
+        if (step === TOTAL_STEPS - 1) {
             if (isContextComplete(context)) {
                 onComplete(context as UserContext);
             }
@@ -33,8 +52,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
         return !!(c.identity && c.experience && c.goal && c.blocker && c.targetRole);
     };
 
-    // Calculate progress based on 5 steps (0-4)
-    const currentProgress = ((step + 1) / 5) * 100;
+    const currentProgress = ((step + 1) / TOTAL_STEPS) * 100;
 
     const variants = {
         enter: (direction: number) => ({
@@ -53,11 +71,44 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
 
     const updateContext = (key: keyof UserContext, value: any) => {
         setContext(prev => ({ ...prev, [key]: value }));
-        // Auto-advance for selection-based steps (except Role input)
+        // Auto-advance for selection-based steps (not for input or skills steps)
         if (step < 4) {
             setTimeout(() => setStep(s => s + 1), 250);
         }
     };
+
+    const toggleSkill = (skill: string) => {
+        setContext(prev => {
+            const currentSkills = prev.skills || [];
+            if (currentSkills.includes(skill)) {
+                return { ...prev, skills: currentSkills.filter(s => s !== skill) };
+            }
+            return { ...prev, skills: [...currentSkills, skill] };
+        });
+    };
+
+    const addCustomSkill = () => {
+        const trimmed = customSkillInput.trim();
+        if (trimmed && !(context.skills || []).includes(trimmed)) {
+            setContext(prev => ({
+                ...prev,
+                skills: [...(prev.skills || []), trimmed]
+            }));
+            setCustomSkillInput('');
+        }
+    };
+
+    const removeSkill = (skill: string) => {
+        setContext(prev => ({
+            ...prev,
+            skills: (prev.skills || []).filter(s => s !== skill)
+        }));
+    };
+
+    const getDomainSkills = () => SKILL_DOMAINS[activeDomain] || [];
+
+    // Show Continue/Launch button on steps 4 (Target Role input) and 5 (Skills)
+    const showContinueButton = step >= 4;
 
     return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -72,7 +123,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
                 {/* Progress Bar */}
                 <div className="mb-8">
                     <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                        <span>Step {step + 1} of 5</span>
+                        <span>Step {step + 1} of {TOTAL_STEPS}</span>
                         <span>{Math.round(currentProgress)}% Completed</span>
                     </div>
                     <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
@@ -137,7 +188,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
                                                 key={exp}
                                                 selected={context.experience === exp}
                                                 onClick={() => updateContext('experience', exp)}
-                                                icon={null} // No icon for simple list
+                                                icon={null}
                                                 title={exp}
                                                 desc=""
                                                 layout="horizontal"
@@ -222,7 +273,106 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
                             )}
 
                             {step === 4 && (
-                                <motion.div key="step4" custom={1} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }} className="flex-1">
+                                <motion.div key="step4" custom={1} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }} className="flex-1 flex flex-col">
+                                    <h2 className="text-3xl font-heading font-bold text-foreground mb-1 text-center">Your Skills</h2>
+                                    <p className="text-muted-foreground text-center mb-5 text-sm">Select from domains or add your own. These power your AI resume.</p>
+
+                                    {/* Domain Tabs */}
+                                    <div className="flex flex-wrap gap-1.5 mb-4">
+                                        {Object.keys(SKILL_DOMAINS).map(domain => (
+                                            <button
+                                                key={domain}
+                                                onClick={() => setActiveDomain(domain)}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border",
+                                                    activeDomain === domain
+                                                        ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300 shadow-[0_0_12px_-3px_rgba(99,102,241,0.3)]"
+                                                        : "border-white/5 text-muted-foreground hover:text-foreground hover:border-white/10 hover:bg-white/5"
+                                                )}
+                                            >
+                                                {domain}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Skill Grid */}
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {getDomainSkills().map(skill => {
+                                            const isSelected = (context.skills || []).includes(skill);
+                                            return (
+                                                <button
+                                                    key={skill}
+                                                    onClick={() => toggleSkill(skill)}
+                                                    className={cn(
+                                                        "px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border",
+                                                        isSelected
+                                                            ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-300 ring-1 ring-indigo-500/20"
+                                                            : "border-white/5 bg-zinc-800/60 text-muted-foreground hover:text-foreground hover:border-white/15 hover:bg-zinc-700/60"
+                                                    )}
+                                                >
+                                                    {isSelected && <Check className="w-3 h-3 inline mr-1 -mt-0.5" />}
+                                                    {skill}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Custom Skill Input */}
+                                    <div className="flex gap-2 mb-4">
+                                        <div className="flex-1 relative">
+                                            <Plus className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                            <input
+                                                type="text"
+                                                placeholder="Add a custom skill..."
+                                                value={customSkillInput}
+                                                onChange={(e) => setCustomSkillInput(e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') addCustomSkill(); }}
+                                                className="w-full bg-zinc-900/50 border border-white/10 rounded-lg pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500/40 transition-colors"
+                                            />
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={addCustomSkill}
+                                            disabled={!customSkillInput.trim()}
+                                            className="border-white/10 text-xs hover:bg-white/5"
+                                        >
+                                            Add
+                                        </Button>
+                                    </div>
+
+                                    {/* Selected Skills */}
+                                    {(context.skills || []).length > 0 && (
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Selected ({(context.skills || []).length})</span>
+                                                <button
+                                                    onClick={() => setContext(prev => ({ ...prev, skills: [] }))}
+                                                    className="text-[10px] text-red-400/70 hover:text-red-400 transition-colors font-medium"
+                                                >
+                                                    Clear all
+                                                </button>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {(context.skills || []).map(skill => (
+                                                    <span
+                                                        key={skill}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[11px] font-medium"
+                                                    >
+                                                        {skill}
+                                                        <button onClick={() => removeSkill(skill)} className="hover:text-red-400 transition-colors ml-0.5">
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {step === 5 && (
+                                <motion.div key="step5" custom={1} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }} className="flex-1">
                                     <h2 className="text-3xl font-heading font-bold text-foreground mb-2 text-center">Target Role</h2>
                                     <p className="text-muted-foreground text-center mb-8">What is the exact job title you are aiming for?</p>
                                     <div className="max-w-md mx-auto relative mt-8">
@@ -256,18 +406,17 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
                                 Back
                             </Button>
 
-                            {/* Only show Continue button on Step 4 (Input) or if they haven't auto-advanced yet */}
                             <Button
                                 onClick={handleNext}
                                 disabled={
-                                    (step === 4 && !context.targetRole)
+                                    (step === 5 && !context.targetRole)
                                 }
                                 variant="glow"
                                 size="lg"
-                                className={cn("px-8 min-w-[140px]", step < 4 && "opacity-0 pointer-events-none")} // Hide on selection steps for cleaner UI
+                                className={cn("px-8 min-w-[140px]", !showContinueButton && "opacity-0 pointer-events-none")}
                             >
-                                {step === 4 ? 'Launch 🚀' : 'Continue'}
-                                {step !== 4 && <ArrowRight className="w-4 h-4 ml-2" />}
+                                {step === TOTAL_STEPS - 1 ? 'Launch 🚀' : 'Continue'}
+                                {step !== TOTAL_STEPS - 1 && <ArrowRight className="w-4 h-4 ml-2" />}
                             </Button>
                         </div>
                     </CardContent>
