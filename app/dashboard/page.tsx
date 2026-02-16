@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AppView, ResumeData, WizardInitialData, UserContext } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
@@ -23,9 +24,20 @@ import { FileText, ClipboardList, BarChart, Wand2, Key, LayoutTemplate, Trending
 const DashboardPage: React.FC = () => {
     const { user, loading: authLoading, signOut } = useAuth();
     const supabase = createClient();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const router = useRouter();
 
-    const [currentView, setCurrentView] = useState<AppView | null>(null); // null = loading
+    const [currentView, setCurrentViewState] = useState<AppView | null>(null); // null = loading
     const [wizardInitialData, setWizardInitialData] = useState<WizardInitialData | null>(null);
+
+    // Wrapper to sync state with URL
+    const setCurrentView = (view: AppView) => {
+        setCurrentViewState(view);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('view', view);
+        window.history.pushState(null, '', `?${params.toString()}`);
+    };
     const [scoreCheckText, setScoreCheckText] = useState<string>('');
     const [userContext, setUserContext] = useState<UserContext | null>(null);
 
@@ -75,10 +87,17 @@ const DashboardPage: React.FC = () => {
                     skills: data.skills || [],
                 };
                 setUserContext(context);
-                setCurrentView(AppView.DASHBOARD);
+
+                // RESTORE VIEW FROM URL
+                const viewParam = searchParams.get('view');
+                if (viewParam && Object.values(AppView).includes(viewParam as AppView)) {
+                    setCurrentViewState(viewParam as AppView);
+                } else {
+                    setCurrentViewState(AppView.DASHBOARD);
+                }
             } else {
                 // New user — show onboarding
-                setCurrentView(AppView.ONBOARDING);
+                setCurrentViewState(AppView.ONBOARDING);
             }
         };
 

@@ -15,6 +15,23 @@ export enum AppView {
 
 export type TemplateId = 'modern' | 'classic' | 'creative' | 'minimalist' | 'standard' | 'executive' | 'compact' | 'elegant' | 'timeline';
 
+export interface TemplateConfig {
+  hasProfileImage: boolean;
+  // Add other feature flags here in the future (e.g., hasSkillsBar, hasCompactHeader)
+}
+
+export const TEMPLATE_CONFIG: Record<TemplateId, TemplateConfig> = {
+  modern: { hasProfileImage: true },
+  classic: { hasProfileImage: false },
+  creative: { hasProfileImage: true },
+  minimalist: { hasProfileImage: false },
+  standard: { hasProfileImage: false },
+  executive: { hasProfileImage: true },
+  compact: { hasProfileImage: false },
+  elegant: { hasProfileImage: false },
+  timeline: { hasProfileImage: false },
+};
+
 export interface ResumeData {
   fullName: string;
   email: string;
@@ -33,6 +50,7 @@ export interface ResumeData {
   themeColor?: string;
   font?: string;
   profileImage?: string;
+  template?: TemplateId;
 }
 
 export interface WizardInitialData {

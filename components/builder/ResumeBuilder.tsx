@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ResumeData, ExperienceItem, ProjectItem, EducationItem, TemplateId, LanguageItem, SocialLink, WizardInitialData } from '../../types';
+import { ResumeData, ExperienceItem, ProjectItem, EducationItem, TemplateId, LanguageItem, SocialLink, WizardInitialData, TEMPLATE_CONFIG } from '../../types';
 import { generateResumeSummary } from '../../services/geminiService';
 import { useAuth } from '@/contexts/AuthContext';
 import ResumePreview from './ResumeTemplates';
@@ -414,7 +414,10 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
                                             {filteredTemplates.map(t => (
                                                 <div
                                                     key={t.id}
-                                                    onClick={() => { setSelectedTemplate(t.id as TemplateId); }}
+                                                    onClick={() => {
+                                                        setSelectedTemplate(t.id as TemplateId);
+                                                        updateField('template', t.id as TemplateId);
+                                                    }}
                                                     className={cn(
                                                         "cursor-pointer rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative aspect-[210/297] box-content",
                                                         selectedTemplate === t.id
@@ -497,45 +500,47 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
 
                             {currentStep === 1 && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="col-span-1 md:col-span-2">
-                                        <div className="flex items-center gap-6 p-4 border border-white/5 rounded-xl bg-zinc-900/40">
-                                            <div onClick={() => fileInputRef.current?.click()} className="w-20 h-20 shrink-0 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden border-2 border-dashed border-zinc-700 relative group cursor-pointer hover:border-primary transition-colors">
-                                                {data.profileImage ? (
-                                                    <img src={data.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <User className="w-8 h-8 text-muted-foreground" />
-                                                )}
-                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                                    <Upload className="w-6 h-6 text-white" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2 flex-1">
-                                                <Label>Profile Photo</Label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                                        <Upload className="w-3 h-3 mr-2" /> Upload
-                                                    </Button>
-                                                    {data.profileImage && (
-                                                        <Button size="sm" variant="ghost" onClick={() => updateField('profileImage', undefined)} className="text-red-400 hover:text-red-300 hover:bg-red-950/30">
-                                                            <X className="w-3 h-3 mr-2" /> Remove
-                                                        </Button>
+                                    {TEMPLATE_CONFIG[data.template || 'modern'].hasProfileImage && (
+                                        <div className="col-span-1 md:col-span-2">
+                                            <div className="flex items-center gap-6 p-4 border border-white/5 rounded-xl bg-zinc-900/40">
+                                                <div onClick={() => fileInputRef.current?.click()} className="w-20 h-20 shrink-0 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden border-2 border-dashed border-zinc-700 relative group cursor-pointer hover:border-primary transition-colors">
+                                                    {data.profileImage ? (
+                                                        <img src={data.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <User className="w-8 h-8 text-muted-foreground" />
                                                     )}
-                                                    {user?.user_metadata?.avatar_url && !data.profileImage && (
-                                                        <Button size="sm" variant="ghost" onClick={() => updateField('profileImage', user.user_metadata.avatar_url)}>
-                                                            Use Google Photo
-                                                        </Button>
-                                                    )}
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                        <Upload className="w-6 h-6 text-white" />
+                                                    </div>
                                                 </div>
-                                                <input
-                                                    type="file"
-                                                    ref={fileInputRef}
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    onChange={handleImageUpload}
-                                                />
+                                                <div className="space-y-2 flex-1">
+                                                    <Label>Profile Photo</Label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                                            <Upload className="w-3 h-3 mr-2" /> Upload
+                                                        </Button>
+                                                        {data.profileImage && (
+                                                            <Button size="sm" variant="ghost" onClick={() => updateField('profileImage', undefined)} className="text-red-400 hover:text-red-300 hover:bg-red-950/30">
+                                                                <X className="w-3 h-3 mr-2" /> Remove
+                                                            </Button>
+                                                        )}
+                                                        {user?.user_metadata?.avatar_url && !data.profileImage && (
+                                                            <Button size="sm" variant="ghost" onClick={() => updateField('profileImage', user.user_metadata.avatar_url)}>
+                                                                Use Google Photo
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        ref={fileInputRef}
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={handleImageUpload}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                     <div className="col-span-1 md:col-span-2 space-y-2">
                                         <Label>Full Name</Label>
                                         <Input value={data.fullName} onChange={e => updateField('fullName', e.target.value)} placeholder="e.g. Alex Mercer" />
