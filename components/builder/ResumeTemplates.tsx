@@ -21,7 +21,8 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data, template }) => {
         skills: data.skills || [],
         achievements: data.achievements || [],
         themeColor: data.themeColor || '#4f46e5',
-        font: data.font || 'sans'
+        font: data.font || 'sans',
+        profileImage: data.profileImage
     };
 
     let fontClass = "font-sans";
@@ -124,8 +125,12 @@ const ModernTemplate = ({ data }: { data: any }) => (
                 <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-2 uppercase">{data.fullName || "Your Name"}</h1>
                 <Socials data={data} />
             </div>
-            <div className="w-16 h-16 text-white flex items-center justify-center text-2xl font-bold rounded-xl shadow-lg" style={{ backgroundColor: data.themeColor }}>
-                {data.fullName ? data.fullName.charAt(0) : "R"}
+            <div className="w-16 h-16 text-white flex items-center justify-center text-2xl font-bold rounded-xl shadow-lg overflow-hidden" style={{ backgroundColor: data.themeColor }}>
+                {data.profileImage ? (
+                    <img src={data.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                    data.fullName ? data.fullName.charAt(0) : "R"
+                )}
             </div>
         </header>
 
@@ -217,7 +222,13 @@ const CreativeTemplate = ({ data }: { data: any }) => (
     <div className="flex min-h-[297mm] bg-white h-auto">
         <div className="w-[32%] text-slate-300 p-8 flex flex-col gap-8 flex-shrink-0" style={{ backgroundColor: '#0f172a' }}>
             <div className="flex flex-col items-center text-center">
-                <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold text-white mb-4 shadow-xl border-4 border-slate-800" style={{ backgroundColor: data.themeColor }}>{data.fullName ? data.fullName.charAt(0).toUpperCase() : "ME"}</div>
+                <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold text-white mb-4 shadow-xl border-4 border-slate-800 overflow-hidden" style={{ backgroundColor: data.themeColor }}>
+                    {data.profileImage ? (
+                        <img src={data.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                        data.fullName ? data.fullName.charAt(0).toUpperCase() : "ME"
+                    )}
+                </div>
                 <div className="space-y-3 text-xs w-full">
                     {data.email && <div>{data.email}</div>}
                     {data.phone && <div>{data.phone}</div>}
@@ -326,7 +337,11 @@ const ExecutiveTemplate = ({ data }: { data: any }) => (
         <div className="h-4 w-full flex-shrink-0" style={{ backgroundColor: data.themeColor }}></div>
         <header className="px-10 py-8 bg-slate-50 border-b border-gray-200 flex items-center gap-8">
             <div className="w-24 h-24 bg-gray-300 rounded-full flex-shrink-0 flex items-center justify-center text-gray-500 overflow-hidden border-4 border-white shadow-sm">
-                <span className="text-3xl font-bold text-white w-full h-full flex items-center justify-center" style={{ backgroundColor: data.themeColor }}>{data.fullName ? data.fullName.charAt(0) : "IMG"}</span>
+                {data.profileImage ? (
+                    <img src={data.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                    <span className="text-3xl font-bold text-white w-full h-full flex items-center justify-center" style={{ backgroundColor: data.themeColor }}>{data.fullName ? data.fullName.charAt(0) : "IMG"}</span>
+                )}
             </div>
             <div className="flex-1">
                 <h1 className="text-3xl font-bold text-slate-800 mb-2">{data.fullName || "Your Name"}</h1>

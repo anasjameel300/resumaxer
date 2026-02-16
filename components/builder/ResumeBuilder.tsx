@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ResumeData, ExperienceItem, ProjectItem, EducationItem, TemplateId, LanguageItem, SocialLink, WizardInitialData } from '../../types';
 import { generateResumeSummary } from '../../services/geminiService';
+import { useAuth } from '@/contexts/AuthContext';
 import ResumePreview from './ResumeTemplates';
 import AiResumeWizard from './AiResumeWizard';
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
     Palette, User, Briefcase, Rocket, GraduationCap, Zap, Trophy, Languages, FileText, CheckCircle2,
-    ChevronLeft, ChevronRight, Plus, Trash2, Wand2, Download, Printer, Eye, Edit3, ArrowRight
+    ChevronLeft, ChevronRight, Plus, Trash2, Wand2, Download, Printer, Eye, Edit3, ArrowRight, Check, ChevronDown, Upload, Image as ImageIcon, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -150,10 +151,44 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
     const [generating, setGenerating] = useState(false);
     const [generatingPdf, setGeneratingPdf] = useState(false);
     const [activeMobileTab, setActiveMobileTab] = useState<'edit' | 'preview'>('edit');
+    const { user } = useAuth();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Filter States
     const [filterHeadshot, setFilterHeadshot] = useState<string>('All');
     const [filterColumns, setFilterColumns] = useState<string>('All');
+
+    // Persistence: Load Draft
+    useEffect(() => {
+        const saved = localStorage.getItem('resume_draft');
+        if (saved && !initialWizardData) {
+            try {
+                const parsed = JSON.parse(saved);
+                setData(prev => ({ ...prev, ...parsed }));
+                // Also restore step if desired, but let's stick to data for now to be safe
+            } catch (e) {
+                console.error("Failed to load draft", e);
+            }
+        }
+    }, [initialWizardData, setData]);
+
+    // Persistence: Save Draft
+    useEffect(() => {
+        if (data) {
+            localStorage.setItem('resume_draft', JSON.stringify(data));
+        }
+    }, [data]);
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                updateField('profileImage', reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -362,11 +397,18 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
                                     <div className="space-y-4">
                                         <Label>Select Template</Label>
                                         <div className="flex gap-4 mb-4">
-                                            <select className="bg-zinc-900 border border-white/10 rounded-md p-2 text-sm text-foreground" value={filterHeadshot} onChange={e => setFilterHeadshot(e.target.value)}>
-                                                <option value="All">All Styles</option>
-                                                <option value="With Photo">With Photo</option>
-                                                <option value="Without Photo">No Photo</option>
-                                            </select>
+                                            <div className="relative">
+                                                <select
+                                                    className="bg-zinc-900 border border-white/10 rounded-md p-2 pr-8 text-sm text-foreground appearance-none cursor-pointer hover:border-white/20 transition-colors focus:ring-2 focus:ring-primary/50 outline-none"
+                                                    value={filterHeadshot}
+                                                    onChange={e => setFilterHeadshot(e.target.value)}
+                                                >
+                                                    <option value="All">All Styles</option>
+                                                    <option value="With Photo">With Photo</option>
+                                                    <option value="Without Photo">No Photo</option>
+                                                </select>
+                                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                                            </div>
                                         </div>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                                             {filteredTemplates.map(t => (
@@ -387,24 +429,26 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
                                                         </div>
                                                     </div>
 
-                                                    {/* Selection Overlay — always visible when selected */}
+                                                    {/* Selection Badge — Top Right */}
                                                     {selectedTemplate === t.id && (
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/40 via-indigo-500/15 to-transparent z-10 flex items-center justify-center">
-                                                            <div className="bg-primary text-white rounded-full p-2.5 shadow-xl shadow-primary/30">
-                                                                <CheckCircle2 className="w-7 h-7" />
+                                                        <div className="absolute top-3 right-3 z-30">
+                                                            <div className="bg-indigo-600 text-white rounded-full p-1.5 shadow-lg shadow-indigo-600/40">
+                                                                <Check className="w-4 h-4 stroke-[3]" />
                                                             </div>
                                                         </div>
                                                     )}
 
                                                     {/* Footer Label */}
                                                     <div className={cn(
-                                                        "absolute inset-x-0 bottom-0 p-3 border-t backdrop-blur-md z-20",
+                                                        "absolute inset-x-0 bottom-0 p-3 border-t backdrop-blur-md z-20 transition-colors duration-300",
                                                         selectedTemplate === t.id
-                                                            ? "bg-primary/90 border-primary/50"
+                                                            ? "bg-indigo-600/95 border-indigo-500/50"
                                                             : "bg-zinc-950/90 border-white/10"
                                                     )}>
-                                                        <div className="font-bold text-xs text-center text-white truncate">
-                                                            {selectedTemplate === t.id && <span className="mr-1">✓</span>}
+                                                        <div className={cn(
+                                                            "font-bold text-xs text-center truncate transition-colors",
+                                                            selectedTemplate === t.id ? "text-white" : "text-zinc-400 group-hover:text-white"
+                                                        )}>
                                                             {t.name}
                                                         </div>
                                                     </div>
@@ -453,6 +497,45 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
 
                             {currentStep === 1 && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="col-span-1 md:col-span-2">
+                                        <div className="flex items-center gap-6 p-4 border border-white/5 rounded-xl bg-zinc-900/40">
+                                            <div onClick={() => fileInputRef.current?.click()} className="w-20 h-20 shrink-0 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden border-2 border-dashed border-zinc-700 relative group cursor-pointer hover:border-primary transition-colors">
+                                                {data.profileImage ? (
+                                                    <img src={data.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User className="w-8 h-8 text-muted-foreground" />
+                                                )}
+                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                    <Upload className="w-6 h-6 text-white" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2 flex-1">
+                                                <Label>Profile Photo</Label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                                        <Upload className="w-3 h-3 mr-2" /> Upload
+                                                    </Button>
+                                                    {data.profileImage && (
+                                                        <Button size="sm" variant="ghost" onClick={() => updateField('profileImage', undefined)} className="text-red-400 hover:text-red-300 hover:bg-red-950/30">
+                                                            <X className="w-3 h-3 mr-2" /> Remove
+                                                        </Button>
+                                                    )}
+                                                    {user?.user_metadata?.avatar_url && !data.profileImage && (
+                                                        <Button size="sm" variant="ghost" onClick={() => updateField('profileImage', user.user_metadata.avatar_url)}>
+                                                            Use Google Photo
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="col-span-1 md:col-span-2 space-y-2">
                                         <Label>Full Name</Label>
                                         <Input value={data.fullName} onChange={e => updateField('fullName', e.target.value)} placeholder="e.g. Alex Mercer" />

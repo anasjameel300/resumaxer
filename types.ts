@@ -32,6 +32,7 @@ export interface ResumeData {
   languages: LanguageItem[];
   themeColor?: string;
   font?: string;
+  profileImage?: string;
 }
 
 export interface WizardInitialData {
