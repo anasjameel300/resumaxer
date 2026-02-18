@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai, POWER_MODEL } from '@/lib/openrouter';
+import { genAI, POWER_MODEL } from '@/lib/gemini';
 
 export async function POST(req: NextRequest) {
     try {
@@ -43,15 +43,15 @@ export async function POST(req: NextRequest) {
     Clarification Answers: ${JSON.stringify(clarificationAnswers)}
     User Context: ${JSON.stringify(userContext || {})}`;
 
-        const completion = await openai.chat.completions.create({
+        const model = genAI.getGenerativeModel({
             model: POWER_MODEL,
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userMessage.substring(0, 15000) }
-            ]
+            systemInstruction: systemPrompt
         });
 
-        return NextResponse.json({ resume: completion.choices[0].message.content });
+        const result = await model.generateContent(userMessage.substring(0, 15000));
+        const responseContent = result.response.text();
+
+        return NextResponse.json({ resume: responseContent });
 
     } catch (error) {
         console.error('Error generating full resume:', error);

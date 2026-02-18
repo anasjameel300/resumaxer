@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai, POWER_MODEL } from '@/lib/openrouter';
+import { genAI, POWER_MODEL } from '@/lib/gemini';
 
 export async function POST(req: NextRequest) {
     try {
@@ -15,15 +15,15 @@ export async function POST(req: NextRequest) {
     Create a 'Tailored Experience' section where you list the modified bullet points for each role.
     `;
 
-        const completion = await openai.chat.completions.create({
+        const model = genAI.getGenerativeModel({
             model: POWER_MODEL,
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: `Resume:\n${currentResume}\n\nTarget Job:\n${jobDescription.substring(0, 5000)}` }
-            ]
+            systemInstruction: systemPrompt
         });
 
-        return NextResponse.json({ tailoredContent: completion.choices[0].message.content });
+        const result = await model.generateContent(`Resume:\n${currentResume}\n\nTarget Job:\n${jobDescription.substring(0, 5000)}`);
+        const responseContent = result.response.text();
+
+        return NextResponse.json({ tailoredContent: responseContent });
 
     } catch (error) {
         console.error('Error tailoring resume:', error);

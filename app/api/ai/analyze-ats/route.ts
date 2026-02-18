@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai, FAST_MODEL } from '@/lib/openrouter';
+import { genAI, FAST_MODEL } from '@/lib/gemini';
 import { AtsAnalysis } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -43,16 +43,16 @@ export async function POST(req: NextRequest) {
     ${jobDescription ? jobDescription.substring(0, 5000) : "No specific job description provided."}
     `;
 
-        const completion = await openai.chat.completions.create({
+        const model = genAI.getGenerativeModel({
             model: FAST_MODEL,
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userMessage }
-            ],
-            response_format: { type: "json_object" }
+            systemInstruction: systemPrompt,
+            generationConfig: {
+                responseMimeType: "application/json"
+            }
         });
 
-        const responseContent = completion.choices[0].message.content;
+        const result = await model.generateContent(userMessage);
+        const responseContent = result.response.text();
 
         if (!responseContent) {
             throw new Error("Empty response from AI");

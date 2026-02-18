@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai, POWER_MODEL } from '@/lib/openrouter';
+import { genAI, POWER_MODEL } from '@/lib/gemini';
 
 export async function POST(req: NextRequest) {
     try {
@@ -38,16 +38,17 @@ export async function POST(req: NextRequest) {
         const userMessage = `Current Profile: ${JSON.stringify(resumeData).substring(0, 5000)}
     Target Role: ${targetRole}`;
 
-        const completion = await openai.chat.completions.create({
+        const model = genAI.getGenerativeModel({
             model: POWER_MODEL,
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userMessage }
-            ],
-            response_format: { type: "json_object" }
+            systemInstruction: systemPrompt,
+            generationConfig: {
+                responseMimeType: "application/json"
+            }
         });
 
-        const responseContent = completion.choices[0].message.content;
+        const result = await model.generateContent(userMessage);
+        const responseContent = result.response.text();
+
         if (!responseContent) {
             throw new Error("Empty response from AI");
         }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai, FAST_MODEL } from '@/lib/openrouter';
+import { genAI, FAST_MODEL } from '@/lib/gemini';
 
 export async function POST(req: NextRequest) {
     try {
@@ -31,15 +31,15 @@ export async function POST(req: NextRequest) {
     Keep it under 200 words. Use Markdown formatting.
     `;
 
-        const completion = await openai.chat.completions.create({
+        const model = genAI.getGenerativeModel({
             model: FAST_MODEL,
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: resumeText.substring(0, 10000) }
-            ]
+            systemInstruction: systemPrompt
         });
 
-        return NextResponse.json({ roast: completion.choices[0].message.content });
+        const result = await model.generateContent(resumeText.substring(0, 10000));
+        const responseContent = result.response.text();
+
+        return NextResponse.json({ roast: responseContent });
 
     } catch (error) {
         console.error('Error roasting resume:', error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai, FAST_MODEL } from '@/lib/openrouter';
+import { genAI, FAST_MODEL } from '@/lib/gemini';
 
 export async function POST(req: NextRequest) {
     try {
@@ -10,15 +10,15 @@ export async function POST(req: NextRequest) {
     Do not use "I" statements if possible, or keep them minimal. Focus on achievements and value proposition.
     `;
 
-        const completion = await openai.chat.completions.create({
+        const model = genAI.getGenerativeModel({
             model: FAST_MODEL,
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: JSON.stringify(resumeData).substring(0, 5000) }
-            ]
+            systemInstruction: systemPrompt
         });
 
-        return NextResponse.json({ summary: completion.choices[0].message.content });
+        const result = await model.generateContent(JSON.stringify(resumeData).substring(0, 5000));
+        const responseContent = result.response.text();
+
+        return NextResponse.json({ summary: responseContent });
 
     } catch (error) {
         console.error('Error generating summary:', error);

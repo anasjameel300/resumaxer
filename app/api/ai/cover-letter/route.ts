@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai, POWER_MODEL } from '@/lib/openrouter';
+import { genAI, POWER_MODEL } from '@/lib/gemini';
 
 export async function POST(req: NextRequest) {
     try {
@@ -16,15 +16,15 @@ export async function POST(req: NextRequest) {
     Return the result as Markdown text.
     `;
 
-        const completion = await openai.chat.completions.create({
+        const model = genAI.getGenerativeModel({
             model: POWER_MODEL,
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: `Candidate Profile:\n${JSON.stringify(resumeData)}\n\nJob Description:\n${jobDescription.substring(0, 5000)}` }
-            ]
+            systemInstruction: systemPrompt
         });
 
-        return NextResponse.json({ coverLetter: completion.choices[0].message.content });
+        const result = await model.generateContent(`Candidate Profile:\n${JSON.stringify(resumeData)}\n\nJob Description:\n${jobDescription.substring(0, 5000)}`);
+        const responseContent = result.response.text();
+
+        return NextResponse.json({ coverLetter: responseContent });
 
     } catch (error) {
         console.error('Error generating cover letter:', error);
