@@ -193,7 +193,7 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data }) => {
                             >
 
                                 {/* Progress Header */}
-                                <Card className="bg-zinc-900 border-white/10 sticky top-4 z-30 shadow-2xl backdrop-blur-xl bg-zinc-900/90 supports-[backdrop-filter]:bg-zinc-900/80">
+                                <Card className="bg-zinc-900/90 border-white/10 shadow-2xl backdrop-blur-xl supports-[backdrop-filter]:bg-zinc-900/80">
                                     <CardContent className="p-6">
                                         <div className="flex justify-between items-end mb-4">
                                             <div>

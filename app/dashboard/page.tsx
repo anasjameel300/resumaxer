@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AppView, ResumeData, WizardInitialData, UserContext } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +21,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import { FileText, ClipboardList, BarChart, Wand2, Key, LayoutTemplate, TrendingUp, Loader2 } from 'lucide-react';
 
-const DashboardPage: React.FC = () => {
+const DashboardContent: React.FC = () => {
     const { user, loading: authLoading, signOut } = useAuth();
     const supabase = createClient();
     const searchParams = useSearchParams();
@@ -404,6 +404,21 @@ const TipCard = ({ title, body, icon }: any) => (
             <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
         </div>
     </div>
+);
+
+const DashboardFallback = () => (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading your workspace...</p>
+        </div>
+    </div>
+);
+
+const DashboardPage: React.FC = () => (
+    <Suspense fallback={<DashboardFallback />}>
+        <DashboardContent />
+    </Suspense>
 );
 
 export default DashboardPage;
