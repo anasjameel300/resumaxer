@@ -251,24 +251,29 @@ const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText, cachedTex
                   <CardContent className="p-8 text-center relative z-10">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-6">Overall Score</h3>
                     <div className="relative inline-flex items-center justify-center">
-                      <svg className="w-48 h-48 transform -rotate-90">
-                        <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-zinc-800" />
-                        <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent"
-                          strokeDasharray={2 * Math.PI * 88}
-                          strokeDashoffset={2 * Math.PI * 88 * (1 - analysis.overallScore / 100)}
-                          className={cn(
-                            "transition-all duration-1000 ease-out",
-                            analysis.overallScore >= 80 ? 'text-emerald-500' : analysis.overallScore >= 60 ? 'text-amber-500' : 'text-red-500'
-                          )}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className={cn(
-                          "text-6xl font-black font-heading",
-                          analysis.overallScore >= 80 ? 'text-emerald-500' : analysis.overallScore >= 60 ? 'text-amber-500' : 'text-red-500'
-                        )}>{analysis.overallScore}</span>
-                        <span className="text-xs text-muted-foreground font-bold uppercase mt-1">/ 100</span>
-                      </div>
+                      {/* Compute score as average of 5 sub-scores for consistency */}
+                      {(() => {
+                        const score = Math.round(
+                          (analysis.contentQuality + analysis.atsStructure + analysis.jobOptimization + analysis.writingQuality + analysis.applicationReady) / 5
+                        );
+                        const color = score >= 80 ? 'text-emerald-500' : score >= 60 ? 'text-amber-500' : 'text-red-500';
+                        return (
+                          <>
+                            <svg className="w-48 h-48 transform -rotate-90">
+                              <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-zinc-800" />
+                              <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent"
+                                strokeDasharray={2 * Math.PI * 88}
+                                strokeDashoffset={2 * Math.PI * 88 * (1 - score / 100)}
+                                className={cn("transition-all duration-1000 ease-out", color)}
+                              />
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <span className={cn("text-6xl font-black font-heading", color)}>{score}</span>
+                              <span className="text-xs text-muted-foreground font-bold uppercase mt-1">/ 100</span>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
