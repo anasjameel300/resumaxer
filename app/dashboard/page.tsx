@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { AppView, ResumeData, WizardInitialData, UserContext } from '@/types';
+import { AppView, ResumeData, WizardInitialData, UserContext, AtsAnalysis, CareerRoadmapResponse } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import ResumeBuilder from '@/components/builder/ResumeBuilder';
@@ -40,6 +40,11 @@ const DashboardContent: React.FC = () => {
     };
     const [scoreCheckText, setScoreCheckText] = useState<string>('');
     const [userContext, setUserContext] = useState<UserContext | null>(null);
+
+    // ─── Persisted AI state — survives navigation within session ───
+    const [atsState, setAtsState] = useState<{ text: string; analysis: AtsAnalysis | null }>({ text: '', analysis: null });
+    const [roastState, setRoastState] = useState<{ text: string; roast: string; persona: string }>({ text: '', roast: '', persona: 'hr' });
+    const [roadmapState, setRoadmapState] = useState<{ targetRole: string; roadmap: CareerRoadmapResponse | null; completedSteps: string[] }>({ targetRole: '', roadmap: null, completedSteps: [] });
 
     // Lifted state to share between Builder and Tailor - Using useHistory
     const [resumeData, setResumeData, undo, redo, canUndo, canRedo] = useHistory<ResumeData>({
@@ -257,15 +262,38 @@ ${data.achievements.join('\n')}
                     />
                 );
             case AppView.ATS_SCORER:
-                return <AtsScorer onImprove={handleImproveResume} initialText={scoreCheckText} />;
+                return (
+                    <AtsScorer
+                        onImprove={handleImproveResume}
+                        initialText={scoreCheckText}
+                        cachedText={atsState.text}
+                        cachedAnalysis={atsState.analysis}
+                        onStateChange={(text, analysis) => setAtsState({ text, analysis })}
+                    />
+                );
             case AppView.OPTIMIZER:
                 return <ResumeAnalysis resumeData={resumeData} onNavigateToBuilder={() => setCurrentView(AppView.BUILDER)} />;
             case AppView.ROADMAP:
-                return <CareerRoadmap data={resumeData} />;
+                return (
+                    <CareerRoadmap
+                        data={resumeData}
+                        cachedTargetRole={roadmapState.targetRole}
+                        cachedRoadmap={roadmapState.roadmap}
+                        cachedCompletedSteps={roadmapState.completedSteps}
+                        onStateChange={(targetRole, roadmap, completedSteps) => setRoadmapState({ targetRole, roadmap, completedSteps })}
+                    />
+                );
             case AppView.COVER_LETTER:
                 return <CoverLetterGenerator data={resumeData} onNavigateToBuilder={() => setCurrentView(AppView.BUILDER)} />;
             case AppView.ROASTER:
-                return <RoastResume />;
+                return (
+                    <RoastResume
+                        cachedText={roastState.text}
+                        cachedRoast={roastState.roast}
+                        cachedPersona={roastState.persona}
+                        onStateChange={(text, roast, persona) => setRoastState({ text, roast, persona })}
+                    />
+                );
             case AppView.PROFILE:
                 return <Profile data={resumeData} setData={setResumeData} />;
             case AppView.TRACKER:

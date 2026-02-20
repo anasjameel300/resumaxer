@@ -43,13 +43,20 @@ const PERSONAS = [
   }
 ];
 
-const RoastResume: React.FC = () => {
-  const [resumeText, setResumeText] = useState('');
-  const [selectedPersona, setSelectedPersona] = useState<string>('hr');
-  const [roast, setRoast] = useState('');
+const RoastResume: React.FC<{
+  cachedText?: string;
+  cachedRoast?: string;
+  cachedPersona?: string;
+  onStateChange?: (text: string, roast: string, persona: string) => void;
+}> = ({ cachedText, cachedRoast, cachedPersona, onStateChange }) => {
+  const [resumeText, setResumeText] = useState(cachedText ?? '');
+  const [selectedPersona, setSelectedPersona] = useState<string>(cachedPersona ?? 'hr');
+  const [roast, setRoast] = useState(cachedRoast ?? '');
   const [loading, setLoading] = useState(false);
   const [parsingFile, setParsingFile] = useState(false);
   const roastRef = useRef<HTMLDivElement>(null);
+
+  const notify = (text: string, r: string, persona: string) => onStateChange?.(text, r, persona);
 
   // Auto-scroll to roast result when it appears
   useEffect(() => {
@@ -108,12 +115,25 @@ const RoastResume: React.FC = () => {
     try {
       const result = await roastMyResume(resumeText, selectedPersona);
       setRoast(result);
+      notify(resumeText, result, selectedPersona);
     } catch (error) {
       console.error(error);
-      setRoast("The AI was too stunned by your resume to speak. Try again.");
+      const fallback = "The AI was too stunned by your resume to speak. Try again.";
+      setRoast(fallback);
+      notify(resumeText, fallback, selectedPersona);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSetPersona = (id: string) => {
+    setSelectedPersona(id);
+    notify(resumeText, roast, id);
+  };
+
+  const handleSetText = (text: string) => {
+    setResumeText(text);
+    notify(text, roast, selectedPersona);
   };
 
   const activePersona = PERSONAS.find(p => p.id === selectedPersona) || PERSONAS[0];
@@ -139,7 +159,7 @@ const RoastResume: React.FC = () => {
             whileTap={{ scale: 0.98 }}
           >
             <Card
-              onClick={() => setSelectedPersona(p.id)}
+              onClick={() => handleSetPersona(p.id)}
               className={cn(
                 "cursor-pointer transition-all duration-300 relative overflow-hidden h-full border-2",
                 selectedPersona === p.id
@@ -179,7 +199,7 @@ const RoastResume: React.FC = () => {
               Resume Content
             </h3>
             {resumeText && (
-              <Button variant="ghost" size="sm" onClick={() => setResumeText('')} className="text-red-400 hover:text-red-300 hover:bg-red-950/30">
+              <Button variant="ghost" size="sm" onClick={() => handleSetText('')} className="text-red-400 hover:text-red-300 hover:bg-red-950/30">
                 <X className="w-4 h-4 mr-2" /> Clear
               </Button>
             )}
@@ -206,7 +226,7 @@ const RoastResume: React.FC = () => {
                 className="min-h-[300px] p-6 text-sm font-mono leading-relaxed bg-zinc-950/50 border-zinc-800 focus:ring-primary/50 resize-y"
                 placeholder="Or paste your text here..."
                 value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
+                onChange={(e) => handleSetText(e.target.value)}
               />
               <div className="absolute bottom-4 right-4 text-xs text-muted-foreground bg-zinc-900/80 px-2 py-1 rounded">
                 {resumeText.length} chars

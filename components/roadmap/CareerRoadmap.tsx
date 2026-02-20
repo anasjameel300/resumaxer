@@ -26,17 +26,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface CareerRoadmapProps {
     data: ResumeData;
+    cachedTargetRole?: string;
+    cachedRoadmap?: CareerRoadmapResponse | null;
+    cachedCompletedSteps?: string[];
+    onStateChange?: (targetRole: string, roadmap: CareerRoadmapResponse | null, completedSteps: string[]) => void;
 }
 
-const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data }) => {
-    const [targetRole, setTargetRole] = useState('');
+const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, cachedRoadmap, cachedCompletedSteps, onStateChange }) => {
+    const [targetRole, setTargetRole] = useState(cachedTargetRole ?? '');
     const [currentRole, setCurrentRole] = useState(data.experience[0]?.role || '');
     const [currentSkills, setCurrentSkills] = useState(data.skills.join(', ') || '');
-    const [roadmap, setRoadmap] = useState<CareerRoadmapResponse | null>(null);
+    const [roadmap, setRoadmap] = useState<CareerRoadmapResponse | null>(cachedRoadmap ?? null);
     const [loading, setLoading] = useState(false);
 
     // Track checked steps: Set of Step IDs
-    const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+    const [completedSteps, setCompletedSteps] = useState<Set<string>>(
+        new Set(cachedCompletedSteps ?? [])
+    );
+
+    const notify = (role: string, rm: CareerRoadmapResponse | null, steps: Set<string>) =>
+        onStateChange?.(role, rm, Array.from(steps));
 
     const handleGenerate = async () => {
         if (!targetRole.trim()) return;
@@ -53,6 +62,8 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data }) => {
 
             const result = await generateCareerRoadmap(contextData, targetRole);
             setRoadmap(result);
+            setCompletedSteps(new Set());
+            notify(targetRole, result, new Set());
         } catch (e) {
             console.error(e);
             alert("Failed to generate roadmap. Please try again.");
@@ -69,6 +80,7 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data }) => {
             } else {
                 next.add(stepId);
             }
+            notify(targetRole, roadmap, next);
             return next;
         });
     };
@@ -371,7 +383,7 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data }) => {
                                     <p className="text-muted-foreground mb-4">Want to adjust your path?</p>
                                     <Button
                                         variant="outline"
-                                        onClick={() => { setRoadmap(null); setTargetRole(''); }}
+                                        onClick={() => { setRoadmap(null); setTargetRole(''); notify('', null, new Set()); }}
                                         className="border-white/10 hover:bg-white/5 text-muted-foreground"
                                     >
                                         <RefreshCw className="w-4 h-4 mr-2" /> Start New Roadmap

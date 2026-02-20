@@ -26,18 +26,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface AtsScorerProps {
   onImprove?: (resumeText: string, improvements: string[]) => void;
   initialText?: string;
+  cachedText?: string;
+  cachedAnalysis?: AtsAnalysis | null;
+  onStateChange?: (text: string, analysis: AtsAnalysis | null) => void;
 }
 
-const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText }) => {
-  const [resumeText, setResumeText] = useState('');
+const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText, cachedText, cachedAnalysis, onStateChange }) => {
+  const [resumeText, setResumeText] = useState(cachedText ?? '');
   const [loading, setLoading] = useState(false);
   const [improving, setImproving] = useState(false);
   const [parsingFile, setParsingFile] = useState(false);
-  const [analysis, setAnalysis] = useState<AtsAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<AtsAnalysis | null>(cachedAnalysis ?? null);
 
-  // Auto-analyze if initial text is provided
+  // Auto-analyze if initial text is provided (only when no cached state)
   useEffect(() => {
-    if (initialText) {
+    if (initialText && !cachedAnalysis) {
       setResumeText(initialText);
       handleAnalyze(initialText);
     }
@@ -82,6 +85,16 @@ const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText }) => {
     }
   };
 
+  const setResumeTextAndNotify = (text: string) => {
+    setResumeText(text);
+    onStateChange?.(text, analysis);
+  };
+
+  const setAnalysisAndNotify = (result: AtsAnalysis | null) => {
+    setAnalysis(result);
+    onStateChange?.(resumeText, result);
+  };
+
   const handleAnalyze = async (textToAnalyze?: string) => {
     const text = textToAnalyze || resumeText;
     if (!text.trim()) return;
@@ -89,7 +102,7 @@ const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText }) => {
     setLoading(true);
     try {
       const result = await analyzeAtsScore(text);
-      setAnalysis(result);
+      setAnalysisAndNotify(result);
     } catch (error) {
       console.error(error);
       alert("Failed to analyze resume. Please check your API key and try again.");
@@ -162,14 +175,14 @@ const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText }) => {
                     <FileText className="w-4 h-4" /> Resume Content
                   </h3>
                   {resumeText && (
-                    <Button variant="ghost" size="sm" onClick={() => setResumeText('')} className="text-red-400 hover:text-red-300 hover:bg-red-950/30 h-8">Cleat Text</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setResumeTextAndNotify(''); setAnalysisAndNotify(null); }} className="text-red-400 hover:text-red-300 hover:bg-red-950/30 h-8">Clear Text</Button>
                   )}
                 </div>
                 <Textarea
                   className="min-h-[300px] resize-y bg-zinc-950/50 border-white/10 font-mono text-sm leading-relaxed focus:ring-primary/50"
                   placeholder="Copy and paste the full content of your resume here..."
                   value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
+                  onChange={(e) => setResumeTextAndNotify(e.target.value)}
                 />
               </CardContent>
             </Card>
@@ -206,7 +219,7 @@ const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText }) => {
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
               <Button
                 variant="outline"
-                onClick={() => setAnalysis(null)}
+                onClick={() => setAnalysisAndNotify(null)}
                 className="border-white/10 hover:bg-white/5 text-muted-foreground"
               >
                 <ArrowRight className="w-4 h-4 mr-2 rotate-180" /> Analyze Another
