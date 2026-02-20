@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { JobApplication, ApplicationStatus } from '../../types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,22 +7,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Building2,
-  MapPin,
   CalendarDays,
   DollarSign,
   Briefcase,
   Plus,
   X,
-  MoreVertical,
   Trash2,
   Bookmark,
   Send,
   MessageSquare,
   CheckCircle2,
   XCircle,
-  GripVertical
+  GripVertical,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -35,13 +36,12 @@ const STATUS_COLUMNS: { id: ApplicationStatus; label: string; color: string; ico
 ];
 
 const JobTracker: React.FC = () => {
-  // Mock initial data
-  const [applications, setApplications] = useState<JobApplication[]>([
-    { id: '1', company: 'Google', role: 'Frontend Engineer', date: '2023-10-15', status: 'Applied', salary: '$150k' },
-    { id: '2', company: 'Spotify', role: 'Product Designer', date: '2023-10-18', status: 'Saved' },
-    { id: '3', company: 'Netflix', role: 'Senior React Dev', date: '2023-10-10', status: 'Interviewing', notes: 'Technical round next Tuesday' },
-    { id: '4', company: 'Amazon', role: 'SDE II', date: '2023-10-20', status: 'Rejected', notes: 'Freezed hiring' },
-  ]);
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [isAdding, setIsAdding] = useState(false);
   const [newJob, setNewJob] = useState<Partial<JobApplication>>({ status: 'Saved' });
@@ -50,30 +50,95 @@ const JobTracker: React.FC = () => {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ApplicationStatus | null>(null);
 
-  const addApplication = () => {
-    if (!newJob.company || !newJob.role) return;
-    const job: JobApplication = {
-      id: Date.now().toString(),
-      company: newJob.company,
-      role: newJob.role,
-      date: new Date().toISOString().split('T')[0],
-      status: newJob.status as ApplicationStatus || 'Saved',
-      salary: newJob.salary,
-      notes: newJob.notes
+  // ─── Load from Supabase ───
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchApplications = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('job_applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch job applications:', error);
+      } else {
+        const mapped: JobApplication[] = (data ?? []).map((row: any) => ({
+          id: row.id,
+          company: row.company,
+          role: row.role,
+          date: row.applied_date,
+          status: row.status as ApplicationStatus,
+          salary: row.salary ?? undefined,
+          notes: row.notes ?? undefined,
+        }));
+        setApplications(mapped);
+      }
+      setLoading(false);
     };
-    setApplications([...applications, job]);
+
+    fetchApplications();
+  }, [user]);
+
+  // ─── Add ───
+  const addApplication = async () => {
+    if (!newJob.company || !newJob.role || !user) return;
+    setSaving(true);
+
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('job_applications')
+      .insert({
+        user_id: user.id,
+        company: newJob.company,
+        role: newJob.role,
+        applied_date: today,
+        status: newJob.status ?? 'Saved',
+        salary: newJob.salary ?? null,
+        notes: newJob.notes ?? null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to add application:', error);
+    } else if (data) {
+      const job: JobApplication = {
+        id: data.id,
+        company: data.company,
+        role: data.role,
+        date: data.applied_date,
+        status: data.status as ApplicationStatus,
+        salary: data.salary ?? undefined,
+        notes: data.notes ?? undefined,
+      };
+      setApplications(prev => [job, ...prev]);
+    }
+
     setNewJob({ status: 'Saved' });
     setIsAdding(false);
+    setSaving(false);
   };
 
-  const deleteApplication = (id: string) => {
-    if (confirm('Are you sure you want to delete this application?')) {
-      setApplications(apps => apps.filter(app => app.id !== id));
+  // ─── Delete ───
+  const deleteApplication = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this application?')) return;
+
+    const { error } = await supabase
+      .from('job_applications')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Failed to delete application:', error);
+    } else {
+      setApplications(prev => prev.filter(app => app.id !== id));
     }
   };
 
-  // --- Drag and Drop Handlers ---
-
+  // ─── Drag and Drop ───
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = 'move';
@@ -88,17 +153,25 @@ const JobTracker: React.FC = () => {
     setDragOverColumn(null);
   };
 
-  const handleDrop = (e: React.DragEvent, newStatus: ApplicationStatus) => {
+  const handleDrop = async (e: React.DragEvent, newStatus: ApplicationStatus) => {
     e.preventDefault();
     setDragOverColumn(null);
     if (!draggedId) return;
 
-    setApplications(apps =>
-      apps.map(app =>
-        app.id === draggedId ? { ...app, status: newStatus } : app
-      )
+    // Optimistic update
+    setApplications(prev =>
+      prev.map(app => app.id === draggedId ? { ...app, status: newStatus } : app)
     );
     setDraggedId(null);
+
+    const { error } = await supabase
+      .from('job_applications')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', draggedId);
+
+    if (error) {
+      console.error('Failed to update status:', error);
+    }
   };
 
   return (
@@ -188,97 +261,110 @@ const JobTracker: React.FC = () => {
               </div>
               <div className="flex gap-3 mt-8">
                 <Button variant="outline" onClick={() => setIsAdding(false)} className="flex-1 border-white/10 hover:bg-white/5">Cancel</Button>
-                <Button onClick={addApplication} className="flex-1">Create Card</Button>
+                <Button onClick={addApplication} disabled={saving} className="flex-1">
+                  {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                  Create Card
+                </Button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-        <div className="flex gap-6 min-w-[1200px] h-full px-1">
-          {STATUS_COLUMNS.map(column => {
-            const columnApps = applications.filter(a => a.status === column.id);
-            const isOver = dragOverColumn === column.id;
-
-            return (
-              <div
-                key={column.id}
-                className="flex-1 flex flex-col min-w-[260px] h-full"
-                onDragOver={(e) => handleDragOver(e, column.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, column.id)}
-              >
-                {/* Column Header */}
-                <div className={cn(
-                  "flex items-center justify-between p-4 rounded-t-xl backdrop-blur-sm border-t border-x border-b-0 transition-colors",
-                  "bg-gradient-to-b border-white/5",
-                  column.color
-                )}>
-                  <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-muted-foreground">
-                    {column.icon}
-                    <span>{column.label}</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/20 border-0">{columnApps.length}</Badge>
-                </div>
-
-                {/* Drop Zone */}
-                <div className={cn(
-                  "flex-1 p-3 rounded-b-xl border border-t-0 space-y-3 transition-colors duration-200 bg-zinc-900/20",
-                  "border-white/5",
-                  isOver && "bg-white/5 ring-1 ring-inset ring-white/10"
-                )}>
-                  {columnApps.map(app => (
-                    <motion.div
-                      layoutId={app.id}
-                      key={app.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e as any, app.id)}
-                      className={cn(
-                        "bg-zinc-900 p-4 rounded-xl border border-white/5 hover:border-white/20 shadow-sm transition-all group relative cursor-grab active:cursor-grabbing",
-                        draggedId === app.id ? 'opacity-30' : 'hover:shadow-md hover:-translate-y-1'
-                      )}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-foreground leading-tight">{app.company}</h4>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteApplication(app.id); }}
-                          className="text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mt-2 -mr-2"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">{app.role}</div>
-
-                      <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                          <CalendarDays className="w-3 h-3" />
-                          {app.date}
-                        </span>
-                        {app.salary && <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-green-500/30 text-green-400 bg-green-500/10">{app.salary}</Badge>}
-                      </div>
-
-                      {app.notes && (
-                        <div className="mt-3 pt-3 border-t border-white/5 text-xs text-zinc-400 italic truncate flex items-center gap-1.5">
-                          <GripVertical className="w-3 h-3 text-zinc-600" />
-                          {app.notes}
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-
-                  {columnApps.length === 0 && (
-                    <div className="h-24 flex items-center justify-center border-2 border-dashed border-white/5 rounded-lg">
-                      <span className="text-zinc-600 text-xs font-medium">Empty</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Loader2 className="w-7 h-7 animate-spin text-primary" />
+            <p className="text-sm">Loading your board...</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Kanban Board */
+        <div className="flex-1 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+          <div className="flex gap-6 min-w-[1200px] h-full px-1">
+            {STATUS_COLUMNS.map(column => {
+              const columnApps = applications.filter(a => a.status === column.id);
+              const isOver = dragOverColumn === column.id;
+
+              return (
+                <div
+                  key={column.id}
+                  className="flex-1 flex flex-col min-w-[260px] h-full"
+                  onDragOver={(e) => handleDragOver(e, column.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, column.id)}
+                >
+                  {/* Column Header */}
+                  <div className={cn(
+                    "flex items-center justify-between p-4 rounded-t-xl backdrop-blur-sm border-t border-x border-b-0 transition-colors",
+                    "bg-gradient-to-b border-white/5",
+                    column.color
+                  )}>
+                    <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-muted-foreground">
+                      {column.icon}
+                      <span>{column.label}</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/20 border-0">{columnApps.length}</Badge>
+                  </div>
+
+                  {/* Drop Zone */}
+                  <div className={cn(
+                    "flex-1 p-3 rounded-b-xl border border-t-0 space-y-3 transition-colors duration-200 bg-zinc-900/20",
+                    "border-white/5",
+                    isOver && "bg-white/5 ring-1 ring-inset ring-white/10"
+                  )}>
+                    {columnApps.map(app => (
+                      <motion.div
+                        layoutId={app.id}
+                        key={app.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e as any, app.id)}
+                        className={cn(
+                          "bg-zinc-900 p-4 rounded-xl border border-white/5 hover:border-white/20 shadow-sm transition-all group relative cursor-grab active:cursor-grabbing",
+                          draggedId === app.id ? 'opacity-30' : 'hover:shadow-md hover:-translate-y-1'
+                        )}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-foreground leading-tight">{app.company}</h4>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteApplication(app.id); }}
+                            className="text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mt-2 -mr-2"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">{app.role}</div>
+
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <CalendarDays className="w-3 h-3" />
+                            {app.date}
+                          </span>
+                          {app.salary && <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-green-500/30 text-green-400 bg-green-500/10">{app.salary}</Badge>}
+                        </div>
+
+                        {app.notes && (
+                          <div className="mt-3 pt-3 border-t border-white/5 text-xs text-zinc-400 italic truncate flex items-center gap-1.5">
+                            <GripVertical className="w-3 h-3 text-zinc-600" />
+                            {app.notes}
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+
+                    {columnApps.length === 0 && (
+                      <div className="h-24 flex items-center justify-center border-2 border-dashed border-white/5 rounded-lg">
+                        <span className="text-zinc-600 text-xs font-medium">Empty</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
