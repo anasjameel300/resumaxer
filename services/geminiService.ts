@@ -24,12 +24,12 @@ export const parseRawResumeData = async (resumeText: string): Promise<WizardInit
   return postToAi('parse-resume', { resumeText });
 };
 
-export const tailorResume = async (currentResume: ResumeData, jobDescription: string): Promise<string> => {
-  const result = await postToAi('tailor-resume', {
-    currentResume: JSON.stringify(currentResume, null, 2),
-    jobDescription
-  });
-  return result.tailoredContent;
+export const generateClarificationQuestionsForAts = async (resumeText: string, improvements: string[]): Promise<string[]> => {
+  return postToAi('generate-questions', { resumeText, improvements });
+};
+
+export const improveAndParseResume = async (resumeText: string, improvements: string[], answers: Record<string, string>): Promise<WizardInitialData> => {
+  return postToAi('improve-and-parse', { resumeText, improvements, answers });
 };
 
 export const generateClarificationQuestions = async (inputs: any): Promise<string[]> => {
@@ -40,15 +40,6 @@ export const generateFullResume = async (inputs: any, clarificationAnswers?: any
   const result = await postToAi('generate-resume', { resumeData: inputs, clarificationAnswers });
   return result.resume;
 }
-
-export const optimizeResumeContent = async (currentResume: string, jobDescription: string): Promise<string> => {
-  // Re-using tailor endpoint for content optimization
-  const result = await postToAi('tailor-resume', {
-    currentResume,
-    jobDescription
-  });
-  return result.tailoredContent;
-};
 
 export const roastMyResume = async (resumeText: string, persona: string = 'hr'): Promise<string> => {
   const result = await postToAi('roast-resume', { resumeText, persona });

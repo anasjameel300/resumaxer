@@ -5,7 +5,6 @@ export enum AppView {
   DASHBOARD = 'DASHBOARD',
   BUILDER = 'BUILDER',
   ATS_SCORER = 'ATS_SCORER',
-  OPTIMIZER = 'OPTIMIZER',
   ROASTER = 'ROASTER',
   PROFILE = 'PROFILE',
   ROADMAP = 'ROADMAP',
@@ -66,6 +65,8 @@ export interface WizardInitialData {
   educationRaw: string;
   skillsRaw: string;
   analysisImprovements?: string[];
+  oldAtsScore?: number;
+  newAtsScore?: number;
 }
 
 export interface UserContext {

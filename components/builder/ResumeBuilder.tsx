@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
     Palette, User, Briefcase, Rocket, GraduationCap, Zap, Trophy, Languages, FileText, CheckCircle2,
-    ChevronLeft, ChevronRight, Plus, Trash2, Wand2, Download, Printer, Eye, Edit3, ArrowRight, Check, ChevronDown, Upload, Image as ImageIcon, X
+    ChevronLeft, ChevronRight, Plus, Trash2, Wand2, Download, Printer, Eye, Edit3, ArrowRight, Check, ChevronDown, Upload, Image as ImageIcon, X, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -144,7 +144,9 @@ const DUMMY_DATA: ResumeData = {
 };
 
 const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo, canUndo, canRedo, initialWizardData, onCheckScore }) => {
-    const [builderMode, setBuilderMode] = useState<'SELECT' | 'MANUAL' | 'AI'>(initialWizardData ? 'AI' : 'SELECT');
+    const [builderMode, setBuilderMode] = useState<'SELECT' | 'MANUAL' | 'AI'>(
+        initialWizardData ? (initialWizardData.oldAtsScore !== undefined ? 'MANUAL' : 'AI') : 'SELECT'
+    );
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
     const [targetRole, setTargetRole] = useState('');
@@ -380,6 +382,38 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ data, setData, undo, redo
                         />
                     </div>
                 </div>
+
+                {/* ATS Improvement Banner */}
+                {initialWizardData?.oldAtsScore !== undefined && initialWizardData?.newAtsScore !== undefined && (
+                    <AnimatePresence>
+                        <motion.div
+                            initial={{ opacity: 0, y: -20, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            className="bg-emerald-500/10 border-b border-emerald-500/20 px-6 py-4 flex items-center justify-between"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-500/20 rounded-full">
+                                    <Sparkles className="w-5 h-5 text-emerald-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-emerald-400 font-semibold text-sm">AI Optimization Complete!</h3>
+                                    <p className="text-emerald-400/80 text-xs mt-0.5">Your resume has been completely rewritten for maximum ATS impact. Please select a design template to view your new resume.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4 bg-emerald-950/50 px-4 py-2 rounded-lg border border-emerald-500/20">
+                                <div className="text-center">
+                                    <div className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Old Score</div>
+                                    <div className="text-xl font-bold font-mono text-zinc-400 line-through decoration-red-500/50">{initialWizardData.oldAtsScore}</div>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-emerald-500" />
+                                <div className="text-center">
+                                    <div className="text-xs text-emerald-500 font-bold uppercase tracking-wider mb-1">New Score</div>
+                                    <div className="text-2xl font-bold font-mono text-emerald-400">{initialWizardData.newAtsScore}</div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
+                )}
 
                 {/* Form Content */}
                 <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar scroll-smooth">

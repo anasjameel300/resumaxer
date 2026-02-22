@@ -7,7 +7,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import ResumeBuilder from '@/components/builder/ResumeBuilder';
 import AtsScorer from '@/components/analysis/AtsScorer';
-import ResumeAnalysis from '@/components/analysis/ResumeAnalysis';
 import RoastResume from '@/components/analysis/RoastResume';
 import Profile from '@/components/profile/Profile';
 import CareerRoadmap from '@/components/roadmap/CareerRoadmap';
@@ -173,30 +172,29 @@ const DashboardContent: React.FC = () => {
         setCurrentView(AppView.DASHBOARD);
     };
 
-    const handleImproveResume = async (text: string, improvements: string[]) => {
-        try {
-            const parsed: WizardInitialData = {
-                personalInfo: {
-                    fullName: "User",
-                    email: "",
-                    phone: "",
-                    location: "",
-                    linkedin: ""
-                },
-                experienceRaw: "",
-                educationRaw: "",
-                skillsRaw: ""
-            };
+    const handleImproveComplete = (improvedResume: any, oldScore: number, newScore: number) => {
+        // Helper to safely parse AI arrays
+        const safeArray = (val: any) => Array.isArray(val) ? val : [];
+        const safeSkills = Array.isArray(improvedResume.skills) ? improvedResume.skills : (typeof improvedResume.skills === 'string' ? improvedResume.skills.split(',').map((s: string) => s.trim()) : []);
 
-            parsed.analysisImprovements = improvements;
-            setWizardInitialData(parsed);
-            setCurrentView(AppView.BUILDER);
-        } catch (e) {
-            console.error("Failed to parse resume for improvement", e);
-            alert("Could not parse resume for improvement. Starting fresh.");
-            setWizardInitialData(null);
-            setCurrentView(AppView.BUILDER);
-        }
+        // Merge the newly parsed AI resume with any existing theme/font settings
+        const updatedResume = {
+            ...resumeData,
+            ...improvedResume,
+            // Ensure any arrays that might be missing from AI output are at least empty arrays and have unique IDs
+            experience: safeArray(improvedResume.experience).map((e: any, i: number) => ({ ...e, id: Date.now().toString() + 'e' + i })),
+            education: safeArray(improvedResume.education).map((e: any, i: number) => ({ ...e, id: Date.now().toString() + 'ed' + i })),
+            skills: safeSkills,
+            projects: safeArray(improvedResume.projects).map((e: any, i: number) => ({ ...e, id: Date.now().toString() + 'p' + i })),
+            languages: safeArray(improvedResume.languages).map((e: any, i: number) => ({ ...e, id: Date.now().toString() + 'l' + i })),
+            socialLinks: safeArray(improvedResume.socialLinks).map((e: any, i: number) => ({ ...e, id: Date.now().toString() + 's' + i }))
+        };
+
+        setResumeData(updatedResume);
+
+        // Pass only the scores to WizardInitialData so the Builder knows to show the banner and skip the wizard
+        setWizardInitialData({ oldAtsScore: oldScore, newAtsScore: newScore } as any);
+        setCurrentView(AppView.BUILDER);
     };
 
     const handleCheckScore = (data: ResumeData) => {
@@ -264,15 +262,13 @@ ${data.achievements.join('\n')}
             case AppView.ATS_SCORER:
                 return (
                     <AtsScorer
-                        onImprove={handleImproveResume}
                         initialText={scoreCheckText}
                         cachedText={atsState.text}
                         cachedAnalysis={atsState.analysis}
                         onStateChange={(text, analysis) => setAtsState({ text, analysis })}
+                        onImproveComplete={handleImproveComplete}
                     />
                 );
-            case AppView.OPTIMIZER:
-                return <ResumeAnalysis resumeData={resumeData} onNavigateToBuilder={() => setCurrentView(AppView.BUILDER)} />;
             case AppView.ROADMAP:
                 return (
                     <CareerRoadmap
@@ -313,7 +309,7 @@ ${data.achievements.join('\n')}
             />
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-                <Header title={currentView === AppView.OPTIMIZER ? 'Resume Tailor' : currentView === AppView.ATS_SCORER ? 'Resume Analysis' : currentView} />
+                <Header title={currentView === AppView.ATS_SCORER ? 'Resume Analysis' : currentView} />
 
                 {/* Background Grid */}
                 <div className="absolute inset-0 pointer-events-none z-[-1]">
@@ -362,13 +358,6 @@ const DashboardHome = ({ onViewChange, userName }: { onViewChange: (view: AppVie
                 icon={<BarChart className="w-8 h-8 text-white" />}
                 gradient="from-violet-500 to-purple-600"
                 onClick={() => onViewChange(AppView.ATS_SCORER)}
-            />
-            <DashboardActionCard
-                title="Resume Tailor"
-                desc="Match your existing resume to a specific JD."
-                icon={<Wand2 className="w-8 h-8 text-white" />}
-                gradient="from-pink-500 to-rose-600"
-                onClick={() => onViewChange(AppView.OPTIMIZER)}
             />
         </div>
 

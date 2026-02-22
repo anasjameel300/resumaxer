@@ -34,7 +34,6 @@ export const Sidebar = ({ currentView, onViewChange, userData }: SidebarProps) =
         { label: "Resume Builder", icon: <FileText size={20} />, view: "BUILDER", category: "Build & Track" },
         { label: "Job Tracker", icon: <ClipboardList size={20} />, view: "TRACKER", category: "Build & Track" },
         { label: "Resume Analysis", icon: <BarChart size={20} />, view: "ATS_SCORER", category: "Optimize" },
-        { label: "Resume Tailor", icon: <Wand2 size={20} />, view: "OPTIMIZER", category: "Optimize" },
         { label: "Cover Letter", icon: <Mail size={20} />, view: "COVER_LETTER", category: "Optimize" },
         { label: "Career Roadmap", icon: <Map size={20} />, view: "ROADMAP", category: "Optimize" },
         { label: "Roast My Resume", icon: <Flame size={20} />, view: "ROASTER", category: "Fun", variant: "danger" },
