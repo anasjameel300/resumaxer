@@ -37,9 +37,22 @@ interface AtsScorerProps {
   cachedAnalysis?: AtsAnalysis | null;
   onStateChange?: (text: string, analysis: AtsAnalysis | null) => void;
   onImproveComplete?: (wizardData: any, oldScore: number, newScore: number) => void;
+  cachedQuestions?: string[] | null;
+  cachedResumeForQuestions?: string | null;
+  onCacheQuestions?: (text: string, questions: string[]) => void;
 }
 
-const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText, cachedText, cachedAnalysis, onStateChange, onImproveComplete }) => {
+const AtsScorer: React.FC<AtsScorerProps> = ({
+  onImprove,
+  initialText,
+  cachedText,
+  cachedAnalysis,
+  onStateChange,
+  onImproveComplete,
+  cachedQuestions,
+  cachedResumeForQuestions,
+  onCacheQuestions
+}) => {
   const [resumeText, setResumeText] = useState(cachedText ?? '');
   const [loading, setLoading] = useState(false);
   const [improving, setImproving] = useState(false);
@@ -114,6 +127,7 @@ const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText, cachedTex
     if (!text.trim()) return;
 
     setLoading(true);
+    setImprovingStep('idle'); // Reset state if analyzing a new resume
     try {
       const result = await analyzeAtsScore(text);
       setAnalysisAndNotify(result);
@@ -127,12 +141,29 @@ const AtsScorer: React.FC<AtsScorerProps> = ({ onImprove, initialText, cachedTex
 
   const handleImproveClick = async () => {
     if (!analysis) return;
+
+    // Check Cache
+    if (cachedQuestions !== null && cachedResumeForQuestions === resumeText) {
+      if (cachedQuestions.length > 0) {
+        setQuestions(cachedQuestions);
+        setAnswers({});
+        setShowModal(true);
+        setImprovingStep('waiting_answers');
+      } else {
+        await processRewrite({});
+      }
+      return;
+    }
+
     setImproving(true);
     setImprovingStep('generating_questions');
 
     try {
       // 1. Ask AI for 2-3 specific questions based on the weak points
       const qs = await generateClarificationQuestionsForAts(resumeText, analysis.improvements);
+
+      // Save to Global Dashboard Cache
+      onCacheQuestions?.(resumeText, qs);
 
       if (qs && qs.length > 0) {
         setQuestions(qs);
@@ -454,7 +485,10 @@ Skills: ${Array.isArray(wizardData.skills) ? wizardData.skills.join(', ') : (typ
       </div>
 
       {/* Q&A Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={(open) => {
+        setShowModal(open);
+        if (!open) setImprovingStep('idle');
+      }}>
         <DialogContent className="sm:max-w-[600px] bg-zinc-950 border border-white/10 text-white">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">

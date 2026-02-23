@@ -10,20 +10,17 @@ export async function POST(req: NextRequest) {
         }
 
         const systemPrompt = `You are an expert technical recruiter and resume writer.
-The user has provided their current resume and an ATS analysis generated some improvement suggestions.
+An ATS analysis generated some improvement suggestions for the user's resume.
 Your goal is to ask 2-3 highly specific, targeted questions to the user to gather the missing information needed to rewrite their resume perfectly.
 
-CRITICAL INSTRUCTION: If the provided Resume Text already contains sufficient context, metrics, and details, and the Suggested Improvements do not strictly require asking the user for more information, you MUST return an empty array: []
+CRITICAL INSTRUCTION: If the Suggested Improvements do not strictly require asking the user for more information (e.g., they just need better formatting or action verbs), you MUST return an empty array: []
 
-Otherwise, based on the below, write 2 to 3 clarifying questions.
-
-Resume Text:
-${resumeText}
+Otherwise, based on the weak points below, write 2 to 3 clarifying questions.
 
 Suggested Improvements:
 ${improvements.join('\n')}
 
-Ensure the questions are direct, actionable, and focus on extracting hard metrics, business outcomes, or technical specifics that are missing.
+Ensure the questions are direct, actionable, and focus on extracting hard metrics, business outcomes, or technical specifics.
 Return ONLY a valid JSON array of strings. No markdown, no markdown blocks, just the JSON array.
 Example of good questions: ["What was the percentage increase in revenue for the Q3 campaign?", "How many users were affected by the performance optimization you led?"]
 Example of returning no questions: []`;

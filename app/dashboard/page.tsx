@@ -42,6 +42,7 @@ const DashboardContent: React.FC = () => {
 
     // ─── Persisted AI state — survives navigation within session ───
     const [atsState, setAtsState] = useState<{ text: string; analysis: AtsAnalysis | null }>({ text: '', analysis: null });
+    const [atsQuestionCache, setAtsQuestionCache] = useState<{ resumeText: string | null; questions: string[] | null }>({ resumeText: null, questions: null });
     const [roastState, setRoastState] = useState<{ text: string; roast: string; persona: string }>({ text: '', roast: '', persona: 'hr' });
     const [roadmapState, setRoadmapState] = useState<{ targetRole: string; roadmap: CareerRoadmapResponse | null; completedSteps: string[] }>({ targetRole: '', roadmap: null, completedSteps: [] });
 
@@ -267,6 +268,9 @@ ${data.achievements.join('\n')}
                         cachedAnalysis={atsState.analysis}
                         onStateChange={(text, analysis) => setAtsState({ text, analysis })}
                         onImproveComplete={handleImproveComplete}
+                        cachedQuestions={atsQuestionCache.questions}
+                        cachedResumeForQuestions={atsQuestionCache.resumeText}
+                        onCacheQuestions={(text, questions) => setAtsQuestionCache({ resumeText: text, questions })}
                     />
                 );
             case AppView.ROADMAP:
