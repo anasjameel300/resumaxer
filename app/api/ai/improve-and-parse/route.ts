@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { genAI, FAST_MODEL } from '@/lib/gemini';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
+    // Authenticate request
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { resumeText, improvements, answers } = await req.json();
 
     if (!resumeText) {
