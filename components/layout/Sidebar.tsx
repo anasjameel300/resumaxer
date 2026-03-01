@@ -13,7 +13,8 @@ import {
     Map,
     Flame,
     User,
-    Zap
+    Zap,
+    BrainCircuit
 } from "lucide-react";
 import { AppView } from "@/types"; // We need to ensure types are imported correctly. Assuming AppView is in types.
 
@@ -32,6 +33,7 @@ export const Sidebar = ({ currentView, onViewChange, userData }: SidebarProps) =
     const navItems = [
         { label: "Dashboard", icon: <LayoutDashboard size={20} />, view: "DASHBOARD" },
         { label: "Resume Builder", icon: <FileText size={20} />, view: "BUILDER", category: "Build & Track" },
+        { label: "Memory Block", icon: <BrainCircuit size={20} />, view: "DOCUMENT_UPLOAD", category: "Build & Track" },
         { label: "Job Tracker", icon: <ClipboardList size={20} />, view: "TRACKER", category: "Build & Track" },
         { label: "Resume Analysis", icon: <BarChart size={20} />, view: "ATS_SCORER", category: "Optimize" },
         { label: "Cover Letter", icon: <Mail size={20} />, view: "COVER_LETTER", category: "Optimize" },

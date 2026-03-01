@@ -12,6 +12,7 @@ import Profile from '@/components/profile/Profile';
 import CareerRoadmap from '@/components/roadmap/CareerRoadmap';
 import CoverLetterGenerator from '@/components/cover-letter/CoverLetterGenerator';
 import OnboardingQuiz from '@/components/onboarding/OnboardingQuiz';
+import MemoryBlockTool from '@/components/profile/MemoryBlockTool';
 import JobTracker from '@/components/tracker/JobTracker';
 import { useHistory } from '@/hooks/useHistory';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -294,6 +295,8 @@ ${data.achievements.join('\n')}
                         onStateChange={(text, roast, persona) => setRoastState({ text, roast, persona })}
                     />
                 );
+            case AppView.DOCUMENT_UPLOAD:
+                return <MemoryBlockTool />;
             case AppView.PROFILE:
                 return <Profile data={resumeData} setData={setResumeData} />;
             case AppView.TRACKER:
@@ -362,6 +365,13 @@ const DashboardHome = ({ onViewChange, userName }: { onViewChange: (view: AppVie
                 icon={<BarChart className="w-8 h-8 text-white" />}
                 gradient="from-violet-500 to-purple-600"
                 onClick={() => onViewChange(AppView.ATS_SCORER)}
+            />
+            <DashboardActionCard
+                title="Memory Block"
+                desc="Extract achievements from your certificates and old resumes via AI."
+                icon={<Wand2 className="w-8 h-8 text-white" />}
+                gradient="from-orange-500 to-rose-600"
+                onClick={() => onViewChange(AppView.DOCUMENT_UPLOAD as AppView)}
             />
         </div>
 
