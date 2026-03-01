@@ -10,6 +10,7 @@ export enum AppView {
   ROADMAP = 'ROADMAP',
   COVER_LETTER = 'COVER_LETTER',
   TRACKER = 'TRACKER',
+  DOCUMENT_UPLOAD = 'DOCUMENT_UPLOAD',
 }
 
 export type TemplateId = 'modern' | 'classic' | 'creative' | 'minimalist' | 'standard' | 'executive' | 'compact' | 'elegant' | 'timeline';
@@ -105,6 +106,16 @@ export interface LanguageItem {
   id: string;
   language: string;
   proficiency: string; // e.g., Native, Fluent, Intermediate
+}
+
+export interface AchievementItem {
+  id: string;
+  user_id?: string;
+  title: string;
+  description: string;
+  category: string;
+  source_type: string;
+  date?: string;
 }
 
 export interface SocialLink {
