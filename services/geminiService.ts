@@ -51,8 +51,8 @@ export const generateResumeSummary = async (data: Partial<ResumeData>, targetRol
   return result.summary;
 };
 
-export const generateCareerRoadmap = async (data: ResumeData, targetRole: string): Promise<CareerRoadmapResponse | null> => {
-  return postToAi('roadmap', { resumeData: data, targetRole });
+export const generateCareerRoadmap = async (data: ResumeData, targetRole: string, userName: string): Promise<CareerRoadmapResponse | null> => {
+  return postToAi('roadmap', { resumeData: data, targetRole, userName });
 };
 
 export const generateCoverLetter = async (data: ResumeData, jobDescription: string): Promise<string> => {

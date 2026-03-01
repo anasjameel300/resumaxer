@@ -101,6 +101,12 @@ const DashboardContent: React.FC = () => {
                 } else {
                     setCurrentViewState(AppView.DASHBOARD);
                 }
+
+                // FIX: Sync skills from onboarding directly into resumeData so it's globally available
+                setResumeData(prev => ({
+                    ...prev,
+                    skills: data.skills && data.skills.length > 0 ? data.skills : prev.skills
+                }));
             } else {
                 // New user — show onboarding
                 setCurrentViewState(AppView.ONBOARDING);
@@ -123,6 +129,7 @@ const DashboardContent: React.FC = () => {
                     phone: data.phone || prev.phone,
                     location: data.location || prev.location,
                     targetRole: data.target_role || prev.targetRole,
+                    socialLinks: data.social_links && Array.isArray(data.social_links) && data.social_links.length > 0 ? data.social_links : prev.socialLinks
                 }));
             }
         };

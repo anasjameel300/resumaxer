@@ -30,14 +30,23 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
     const handleSave = async () => {
         setIsSaving(true);
         if (user) {
+            // Update profile info
             await supabase.from('profiles').update({
                 full_name: data.fullName,
                 email: data.email,
                 phone: data.phone,
                 location: data.location,
                 target_role: data.targetRole,
+                social_links: data.socialLinks,
                 updated_at: new Date().toISOString(),
             }).eq('id', user.id);
+
+            // Update skills context
+            await supabase.from('user_onboarding').update({
+                skills: data.skills || [],
+                target_role: data.targetRole,
+                updated_at: new Date().toISOString()
+            }).eq('user_id', user.id);
         }
         setTimeout(() => setIsSaving(false), 600);
     };

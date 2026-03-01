@@ -3,10 +3,11 @@ import { genAI, POWER_MODEL } from '@/lib/gemini';
 
 export async function POST(req: NextRequest) {
     try {
-        const { resumeData, targetRole } = await req.json();
+        const { resumeData, targetRole, userName } = await req.json();
 
         const systemPrompt = `You are an expert Career Coach and Technical Mentor.
-    Task: Create a comprehensive, step-by-step career roadmap for this user to achieve the Target Role. Return structured JSON data only.
+    The user's real name is ${userName}. ABSOLUTELY DO NOT address them, or refer to them, by any other name, even if you see different names in their uploaded data.
+    Task: Create a comprehensive, step-by-step career roadmap for ${userName} to achieve the Target Role. Return structured JSON data only.
     Requirements:
     Break the roadmap into 3-4 clear phases (e.g., Foundations, Advanced, Mastery).
     For each phase, provide 3-5 specific 'Task' items that are actionable (e.g., 'Build a REST API').

@@ -20,9 +20,13 @@ import {
     ExternalLink,
     RefreshCw,
     Map as MapIcon,
-    Milestone
+    Milestone,
+    CloudIcon,
+    Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 
 interface CareerRoadmapProps {
     data: ResumeData;
@@ -33,11 +37,15 @@ interface CareerRoadmapProps {
 }
 
 const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, cachedRoadmap, cachedCompletedSteps, onStateChange }) => {
+    const { user } = useAuth();
+    const supabase = createClient();
     const [targetRole, setTargetRole] = useState(cachedTargetRole ?? '');
     const [currentRole, setCurrentRole] = useState(data.experience[0]?.role || '');
     const [currentSkills, setCurrentSkills] = useState(data.skills.join(', ') || '');
     const [roadmap, setRoadmap] = useState<CareerRoadmapResponse | null>(cachedRoadmap ?? null);
     const [loading, setLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [hasLoadedCloud, setHasLoadedCloud] = useState(false);
 
     // Track checked steps: Set of Step IDs
     const [completedSteps, setCompletedSteps] = useState<Set<string>>(
@@ -47,8 +55,45 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, c
     const notify = (role: string, rm: CareerRoadmapResponse | null, steps: Set<string>) =>
         onStateChange?.(role, rm, Array.from(steps));
 
+    // Cloud Load
+    React.useEffect(() => {
+        const loadFromCloud = async () => {
+            if (user && !cachedRoadmap && !hasLoadedCloud) {
+                const { data: dbData } = await supabase.from('user_roadmaps').select('*').eq('user_id', user.id).single();
+                if (dbData && dbData.roadmap_json) {
+                    setTargetRole(dbData.target_role || '');
+                    setRoadmap(dbData.roadmap_json as CareerRoadmapResponse);
+                    const completed = new Set<string>(dbData.completed_steps || []);
+                    setCompletedSteps(completed);
+                    notify(dbData.target_role || '', dbData.roadmap_json as CareerRoadmapResponse, completed);
+                }
+                setHasLoadedCloud(true);
+            }
+        };
+        loadFromCloud();
+    }, [user, cachedRoadmap, hasLoadedCloud]);
+
+    // Cloud Save (Debounced or triggered manually/on generate)
+    const saveToCloud = async (role: string, rm: CareerRoadmapResponse | null, steps: Set<string>) => {
+        if (!user || !rm) return;
+        setIsSaving(true);
+        try {
+            await supabase.from('user_roadmaps').upsert({
+                user_id: user.id,
+                target_role: role,
+                roadmap_json: rm,
+                completed_steps: Array.from(steps),
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleGenerate = async () => {
-        if (!targetRole.trim()) return;
+        if (!targetRole.trim() || !user) return;
         setLoading(true);
         setRoadmap(null);
         setCompletedSteps(new Set());
@@ -56,14 +101,17 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, c
         try {
             const contextData: ResumeData = {
                 ...data,
-                experience: [{ ...data.experience[0], role: currentRole, id: 'temp', company: '', duration: '', details: '' }],
+                experience: [{ ...data.experience?.[0] || {}, role: currentRole, id: 'temp', company: '', duration: '', details: '' }],
                 skills: currentSkills.split(',').map(s => s.trim()).filter(s => s)
             };
 
-            const result = await generateCareerRoadmap(contextData, targetRole);
+            const userName = user?.user_metadata?.full_name || data.fullName || 'User';
+            const result = await generateCareerRoadmap(contextData, targetRole, userName);
+
             setRoadmap(result);
             setCompletedSteps(new Set());
             notify(targetRole, result, new Set());
+            await saveToCloud(targetRole, result, new Set());
         } catch (e) {
             console.error(e);
             alert("Failed to generate roadmap. Please try again.");
@@ -72,7 +120,7 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, c
         }
     };
 
-    const toggleStep = (stepId: string) => {
+    const toggleStep = async (stepId: string) => {
         setCompletedSteps(prev => {
             const next = new Set(prev);
             if (next.has(stepId)) {
@@ -81,6 +129,7 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, c
                 next.add(stepId);
             }
             notify(targetRole, roadmap, next);
+            saveToCloud(targetRole, roadmap, next);
             return next;
         });
     };
@@ -181,8 +230,24 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, c
                 {/* Output Side (8 cols) */}
                 <div className="lg:col-span-8">
                     <AnimatePresence mode="wait">
-                        {!roadmap ? (
+                        {loading ? (
                             <motion.div
+                                key="loading"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="h-full min-h-[500px] flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/5 rounded-2xl bg-zinc-900/40 relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 animate-pulse" />
+                                <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-6 relative z-10" />
+                                <h3 className="text-xl font-bold text-foreground mb-2 relative z-10">Forging Your Path...</h3>
+                                <p className="text-muted-foreground max-w-sm text-center relative z-10">
+                                    Our AI is analyzing your skills and creating a modular, step-by-step roadmap to <span className="text-indigo-400 font-semibold">{targetRole || "your dream role"}</span>. This usually takes 15-20 seconds.
+                                </p>
+                            </motion.div>
+                        ) : !roadmap ? (
+                            <motion.div
+                                key="empty"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
@@ -198,6 +263,7 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, c
                             </motion.div>
                         ) : (
                             <motion.div
+                                key="roadmap"
                                 initial={{ opacity: 0, y: 50 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="space-y-8"
@@ -222,9 +288,21 @@ const CareerRoadmap: React.FC<CareerRoadmapProps> = ({ data, cachedTargetRole, c
                                                     )}
                                                 </p>
                                             </div>
-                                            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => window.print()}>
-                                                Print Plan
-                                            </Button>
+                                            <div className="flex flex-col items-end gap-2">
+                                                {isSaving && (
+                                                    <span className="text-xs text-muted-foreground flex items-center gap-1.5 opacity-70">
+                                                        <Loader2 className="w-3 h-3 animate-spin" /> Saving to cloud...
+                                                    </span>
+                                                )}
+                                                {!isSaving && roadmap && (
+                                                    <span className="text-xs text-emerald-500/80 flex items-center gap-1.5 opacity-80">
+                                                        <CloudIcon className="w-3 h-3" /> Saved to Cloud
+                                                    </span>
+                                                )}
+                                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => window.print()}>
+                                                    Print Plan
+                                                </Button>
+                                            </div>
                                         </div>
                                         <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
                                             <motion.div
