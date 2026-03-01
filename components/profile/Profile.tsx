@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import SkillsBlock from './SkillsBlock';
 
 interface ProfileProps {
     data: ResumeData;
@@ -41,7 +42,7 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
         setTimeout(() => setIsSaving(false), 600);
     };
 
-    const updateField = (field: keyof ResumeData, value: string) => {
+    const updateField = (field: keyof ResumeData, value: any) => {
         setData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -58,7 +59,7 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-4xl mx-auto pb-20 space-y-8"
+            className="max-w-6xl mx-auto pb-20 space-y-8"
         >
             {/* Header / Cover */}
             <div className="relative h-48 rounded-3xl overflow-hidden group">
@@ -97,9 +98,9 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column - Navigation/Actions */}
-                <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Column 1 - Navigation/Actions (1 span) */}
+                <div className="space-y-6 lg:col-span-1">
                     <Card className="bg-zinc-900/40 border-white/5 p-2 overflow-hidden backdrop-blur-sm">
                         <nav className="space-y-1">
                             {['General', 'Account', 'Billing'].map((item, i) => (
@@ -123,7 +124,7 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
                         </button>
                     </Card>
 
-                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-6 relative overflow-hidden">
+                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-6 relative overflow-hidden hidden lg:block">
                         <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl" />
                         <h3 className="font-bold text-indigo-400 mb-2 flex items-center gap-2">
                             <LayoutTemplate className="w-4 h-4" />
@@ -138,10 +139,10 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
                     </div>
                 </div>
 
-                {/* Right Column - Form */}
-                <div className="lg:col-span-2 space-y-6">
+                {/* Column 2 - Personal Info Form (2 spans for extra width on the form) */}
+                <div className="lg:col-span-2">
                     <Card className="bg-zinc-900/40 border-white/5 backdrop-blur-sm">
-                        <div className="p-6 border-b border-white/5 flex justify-between items-center">
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center sm:flex-row flex-col gap-4 sm:gap-0 sm:items-center items-start">
                             <div>
                                 <h2 className="text-lg font-bold text-white">Personal Information</h2>
                                 <p className="text-sm text-zinc-400">Manage your public profile details.</p>
@@ -151,7 +152,7 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
                                 disabled={isSaving}
                                 size="sm"
                                 className={cn(
-                                    "gap-2 transition-all",
+                                    "gap-2 transition-all shrink-0",
                                     isSaving ? "bg-emerald-500 text-white" : "bg-white text-black hover:bg-zinc-200"
                                 )}
                             >
@@ -179,8 +180,8 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
                                     <div className="relative">
                                         <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                                         <Input
-                                            value={data.targetRole || ''} // Using targetRole as title fallback
-                                            onChange={(e) => updateField('targetRole', e.target.value)} // Assuming we can use targetRole here? Or fallback to just UI
+                                            value={data.targetRole || ''}
+                                            onChange={(e) => updateField('targetRole', e.target.value)}
                                             className="pl-9 bg-zinc-950/50 border-white/10 focus:border-indigo-500/50"
                                             placeholder="Senior Engineer"
                                         />
@@ -229,33 +230,40 @@ const Profile: React.FC<ProfileProps> = ({ data, setData }) => {
                             </div>
                         </div>
                     </Card>
+                </div>
 
+                {/* Column 3 - Socials & Skills (1 span) */}
+                <div className="lg:col-span-1 space-y-6 flex flex-col">
                     <Card className="bg-zinc-900/40 border-white/5 backdrop-blur-sm">
-                        <div className="p-6 border-b border-white/5">
-                            <h2 className="text-lg font-bold text-white">Social Links</h2>
-                            <p className="text-sm text-zinc-400">Where can recruiters find you?</p>
+                        <div className="p-4 border-b border-white/5">
+                            <h2 className="text-md font-bold text-white leading-tight">Social Links</h2>
+                            <p className="text-xs text-zinc-400 mt-1">Professional presence.</p>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-4 space-y-3">
                             {data.socialLinks.map(link => (
-                                <div key={link.id} className="flex gap-4 items-center group">
-                                    <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
-                                        {link.platform === 'LinkedIn' && <Linkedin className="w-5 h-5 text-blue-500" />}
-                                        {link.platform === 'GitHub' && <Github className="w-5 h-5 text-white" />}
-                                        {link.platform === 'Portfolio' && <Globe className="w-5 h-5 text-emerald-500" />}
-                                        {link.platform === 'Website' && <LayoutTemplate className="w-5 h-5 text-purple-500" />}
+                                <div key={link.id} className="flex gap-3 items-center group">
+                                    <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
+                                        {link.platform === 'LinkedIn' && <Linkedin className="w-4 h-4 text-blue-500" />}
+                                        {link.platform === 'GitHub' && <Github className="w-4 h-4 text-white" />}
+                                        {link.platform === 'Portfolio' && <Globe className="w-4 h-4 text-emerald-500" />}
+                                        {link.platform === 'Website' && <LayoutTemplate className="w-4 h-4 text-purple-500" />}
                                     </div>
                                     <div className="flex-1">
                                         <Input
                                             value={link.url}
                                             onChange={(e) => updateSocial(link.id, e.target.value)}
-                                            className="bg-zinc-950/50 border-white/10 focus:border-indigo-500/50 h-10"
-                                            placeholder={`https://${link.platform.toLowerCase()}.com/...`}
+                                            className="bg-zinc-950/50 border-white/10 focus:border-indigo-500/50 h-8 text-xs px-2"
+                                            placeholder={`${link.platform} URL`}
                                         />
                                     </div >
                                 </div >
                             ))}
                         </div >
                     </Card >
+
+                    <div className="flex-1">
+                        <SkillsBlock skills={data.skills || []} onUpdate={(skills) => updateField('skills', skills)} />
+                    </div>
                 </div >
             </div >
         </motion.div >
